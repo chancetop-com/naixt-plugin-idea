@@ -25,25 +25,29 @@ import java.util.Objects;
  * @author stephen
  */
 public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, DumbAware {
-    private AgentServerService agentServerService;
-    private final JTextArea conversationTextField = new JTextArea();
+    private final JPanel conversationPanel = new JPanel();
+    private final JScrollPane conversationScrollPane = new JBScrollPane(conversationPanel);
     private final JTextField inputTextField = new JTextField();
     private final JButton sendButton = new JButton("Send");
+    private AgentServerService agentServerService;
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
         agentServerService = ApplicationManager.getApplication().getService(AgentServerService.class);
         var mainPanel = new JPanel(new BorderLayout());
         mainPanel.add(createHeaderPanel(project), BorderLayout.NORTH);
-        mainPanel.add(createConversationPanel(), BorderLayout.CENTER);
+        mainPanel.add(conversationScrollPane, BorderLayout.CENTER);
         mainPanel.add(createInputPanel(project), BorderLayout.SOUTH);
+        conversationPanel.setLayout(new BoxLayout(conversationPanel, BoxLayout.Y_AXIS));
         toolWindow.getContentManager().addContent(ContentFactory.getInstance().createContent(mainPanel, "", false));
         mainPanel.getRootPane().setDefaultButton(sendButton);
+        addMessageToConversation("Hi @author, I'm Naixt, an AI agent that helps you coding.", false, false, false);
     }
 
     private @NotNull JPanel createHeaderPanel(@NotNull Project project) {
         var headerPanel = new JPanel(new BorderLayout());
-        var nameLabel = new JLabel("  New Conversation");
+        var nameLabel = new JLabel("New Conversation");
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
         headerPanel.add(nameLabel, BorderLayout.WEST);
 
         var actionGroup = new DefaultActionGroup();
@@ -91,34 +95,72 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         return headerPanel;
     }
 
-    private @NotNull JScrollPane createConversationPanel() {
-        conversationTextField.setText("Hi @author, I'm Naixt, an AI agent that help you coding.");
-        conversationTextField.setLineWrap(true);
-        conversationTextField.setWrapStyleWord(true);
-        return new JBScrollPane(conversationTextField);
-    }
-
     private @NotNull JPanel createInputPanel(@NotNull Project project) {
         var inputPanel = new JPanel(new BorderLayout());
         sendButton.addActionListener(l -> {
             var text = inputTextField.getText();
             if (text.isEmpty()) {
                 Messages.showMessageDialog(project, "Empty input!", "Warning", Messages.getWarningIcon());
+                return;
             }
-            var rsp = agentServerService.send(inputTextField.getText(), project);
-            conversationTextField.append("\n\n" + toUserChat(text) + "\n\n" + toAgentChat(rsp));
+            addMessageToConversation(text, true, false, false);
             inputTextField.setText("");
+
+            var rsp = agentServerService.send(text, project);
+            addMessageToConversation(rsp, false, hasAction(rsp), true);
         });
         inputPanel.add(inputTextField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
         return inputPanel;
     }
 
-    private String toUserChat(String text) {
-        return "You:\n" + text;
+    private boolean hasAction(String rsp) {
+        return true;
     }
 
-    private String toAgentChat(String text) {
-        return "Naixt:\n" + text;
+    private void addMessageToConversation(String message, boolean isUser, boolean showApprove, boolean showRegenerate) {
+        var messagePanel = new JPanel(new BorderLayout());
+        messagePanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, Color.DARK_GRAY),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+
+        var label = new JLabel(isUser ? "You:" : "Naixt:");
+        label.setFont(label.getFont().deriveFont(Font.BOLD));
+        messagePanel.add(label, BorderLayout.NORTH);
+
+        var textArea = new JTextArea(message);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        textArea.setEditable(false);
+        textArea.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        messagePanel.add(textArea, BorderLayout.CENTER);
+
+        if (!isUser) {
+            var buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            if (showApprove) {
+                var approveButton = new JButton("Need Your Approve!");
+                approveButton.addActionListener(e -> handleApprove(message));
+                buttonPanel.add(approveButton);
+            }
+            if (showRegenerate) {
+                var regenerateButton = new JButton("Regenerate");
+                buttonPanel.add(regenerateButton);
+            }
+            messagePanel.add(buttonPanel, BorderLayout.SOUTH);
+        }
+
+        conversationPanel.add(messagePanel);
+        conversationPanel.revalidate();
+        conversationPanel.repaint();
+
+        SwingUtilities.invokeLater(() -> {
+            var vertical = conversationScrollPane.getVerticalScrollBar();
+            vertical.setValue(vertical.getMaximum());
+        });
+    }
+
+    private void handleApprove(String command) {
+        System.out.println("Approving command: " + command);
     }
 }

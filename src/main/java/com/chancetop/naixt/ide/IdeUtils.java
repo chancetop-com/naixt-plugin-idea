@@ -3,6 +3,7 @@ package com.chancetop.naixt.ide;
 import com.chancetop.naixt.ide.internal.Position;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ProjectRootManager;
 
 /**
  * @author stephen
@@ -21,5 +22,16 @@ public class IdeUtils {
         var doc = editor.getDocument();
         var offset = editor.getCaretModel().getOffset();
         return new Position(doc.getLineNumber(offset), offset - doc.getLineStartOffset(doc.getLineNumber(offset)));
+    }
+
+    public static String getProjectPath(Project project) {
+        if (project == null) {
+            return "";
+        }
+        var contentRoots = ProjectRootManager.getInstance(project).getContentRoots();
+        if (contentRoots.length > 0) {
+            return contentRoots[0].getPath();
+        }
+        return "";
     }
 }

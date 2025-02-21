@@ -1,7 +1,7 @@
 package com.chancetop.naixt.agent;
 
-import com.chancetop.naixt.agent.internal.ChatRequest;
-import com.chancetop.naixt.agent.internal.ChatResponse;
+import com.chancetop.naixt.agent.api.naixt.ChatResponse;
+import com.chancetop.naixt.agent.api.naixt.NaixtChatRequest;
 import com.chancetop.naixt.ide.IdeUtils;
 import com.chancetop.naixt.settings.NaixtSettingStateService;
 import com.google.gson.Gson;
@@ -16,13 +16,14 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 
 import java.io.IOException;
+import java.time.Duration;
 
 /**
  * @author stephen
  */
 @Service
 public final class AgentServerService {
-    private final OkHttpClient client = new OkHttpClient();
+    private final OkHttpClient client = new OkHttpClient.Builder().readTimeout(Duration.ofSeconds(30)).build();
     private final Gson gson = new GsonBuilder().create();
 
     public static AgentServerService getInstance() {
@@ -79,11 +80,23 @@ public final class AgentServerService {
 
     private String createChatRequest(String text, Project project) {
         var state = ApplicationManager.getApplication().getService(NaixtSettingStateService.class).getState();
-        return gson.toJson(ChatRequest.of(
+        return gson.toJson(toRequest(
                 text,
                 IdeUtils.getCurrentFilePath(project),
                 IdeUtils.getCurrentPosition(project).line(),
                 IdeUtils.getCurrentPosition(project).column(),
-                state == null ? "" : state.getLlmProviderModel()));
+                state == null ? "" : state.getLlmProviderModel(),
+                IdeUtils.getProjectPath(project)));
+    }
+
+    private NaixtChatRequest toRequest(String text, String currentFilePath, Integer line, Integer column, String model, String projectPath) {
+        var request = new NaixtChatRequest();
+        request.query = text;
+        request.currentFilePath = currentFilePath;
+        request.currentColumnNumber = column;
+        request.currentLineNumber = line;
+        request.model = model;
+        request.workspacePath = projectPath;
+        return request;
     }
 }
