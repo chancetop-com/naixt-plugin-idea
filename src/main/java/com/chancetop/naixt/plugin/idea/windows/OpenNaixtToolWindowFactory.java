@@ -12,6 +12,8 @@ import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.components.JBScrollPane;
@@ -21,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.nio.file.Paths;
 import java.util.Objects;
 
 /**
@@ -32,10 +35,12 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     private final JTextField inputTextField = new JTextField();
     private final JButton sendButton = new JButton("Send");
     private AgentServerService agentServerService;
+    private String workspacePath;
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
         agentServerService = AgentServerService.getInstance();
+        workspacePath = project.getBasePath();
         var mainPanel = new JPanel(new BorderLayout());
         mainPanel.add(createHeaderPanel(project), BorderLayout.NORTH);
         mainPanel.add(conversationScrollPane, BorderLayout.CENTER);
@@ -172,8 +177,59 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         });
     }
 
-    private void handleApprove(JButton button, ActionEvent e, ChatResponse command) {
-        System.out.println("Approving command: " + command);
-        button.setText("Approved");
+    private void handleApprove(JButton button, ActionEvent e, ChatResponse msg) {
+        var dialog = new JDialog();
+        dialog.setTitle("Change List");
+        dialog.setSize(600, 400);
+        dialog.setLayout(new BorderLayout());
+
+        if (msg.fileContents != null && !msg.fileContents.isEmpty()) {
+            var filePanel = new JPanel();
+            filePanel.setLayout(new BoxLayout(filePanel, BoxLayout.Y_AXIS));
+            for (var fileContent : msg.fileContents) {
+                var fileTextArea = new JTextArea(String.format("File: %s\nAction: %s\nDiff: \n%s\n",
+                        fileContent.filePath,
+                        fileContent.action.toString(),
+                        fileContent.content));
+                fileTextArea.setEditable(false);
+                fileTextArea.setLineWrap(true);
+                fileTextArea.setWrapStyleWord(true);
+                filePanel.add(new JScrollPane(fileTextArea));
+                filePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            }
+            dialog.add(new JScrollPane(filePanel), BorderLayout.CENTER);
+        }
+
+        var buttonPanel = createButtonPanel(button, msg, dialog);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setLocationRelativeTo(null);
+        dialog.setVisible(true);
+    }
+
+    private @NotNull JPanel createButtonPanel(JButton button, ChatResponse msg, JDialog dialog) {
+        var buttonPanel = new JPanel();
+        var confirmButton = new JButton("OK");
+        var cancelButton = new JButton("Cancel");
+
+        confirmButton.addActionListener(e1 -> {
+            button.setText("Approved");
+            agentServerService.approve(msg);
+
+            ApplicationManager.getApplication().invokeLater(() -> {
+                var baseDir = LocalFileSystem.getInstance().findFileByPath(workspacePath);
+                if (baseDir != null) {
+                    VfsUtil.markDirtyAndRefresh(true, true, false, baseDir);
+                }
+            });
+
+            dialog.dispose();
+        });
+
+        cancelButton.addActionListener(e1 -> dialog.dispose());
+
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(cancelButton);
+        return buttonPanel;
     }
 }
