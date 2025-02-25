@@ -31,7 +31,7 @@ public class AgentServiceStarter {
     }
 
     private static boolean agentServicePackageNotExists(String dir) {
-        var execPath = new File(dir + "/example-service/bin", "example-service.bat");
+        var execPath = new File(dir + "/agent-service/bin", "agent-service.bat");
         return !execPath.exists();
     }
 
