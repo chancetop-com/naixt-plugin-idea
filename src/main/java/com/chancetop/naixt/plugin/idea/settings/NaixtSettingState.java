@@ -1,4 +1,4 @@
-package com.chancetop.naixt.settings;
+package com.chancetop.naixt.plugin.idea.settings;
 
 /**
  * @author stephen

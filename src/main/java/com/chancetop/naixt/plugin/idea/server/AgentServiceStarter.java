@@ -1,4 +1,4 @@
-package com.chancetop.naixt.server;
+package com.chancetop.naixt.plugin.idea.server;
 
 import com.intellij.openapi.application.PathManager;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -19,7 +21,7 @@ import java.nio.file.StandardCopyOption;
 public class AgentServiceStarter {
     private static final Logger LOGGER = LoggerFactory.getLogger(AgentServiceStarter.class);
 
-    public static Process start(String url) throws IOException {
+    public static Process start(String url) throws IOException, URISyntaxException {
         var dir = getPluginDir();
         if (agentServicePackageNotExists(dir)) {
             ensureDirectoryExists(dir);
@@ -47,7 +49,7 @@ public class AgentServiceStarter {
         }
     }
 
-    private static File download(String urlStr, String dir) throws IOException {
+    private static File download(String urlStr, String dir) throws IOException, URISyntaxException {
         var parentDir = Paths.get(dir).getParent().toAbsolutePath();
         var tmp = new File(parentDir.toString(), "agent-service.tar");
         if (urlStr.startsWith("/") || urlStr.matches("[A-Za-z]:.*")) {
@@ -58,7 +60,7 @@ public class AgentServiceStarter {
             Files.copy(sourceFile.toPath(), tmp.toPath(), StandardCopyOption.REPLACE_EXISTING);
             return tmp;
         }
-        var url = new URL(urlStr);
+        var url = new URI(urlStr).toURL();
         if ("file".equals(url.getProtocol())) {
             Files.copy(new File(url.getFile()).toPath(), tmp.toPath(), StandardCopyOption.REPLACE_EXISTING);
             return tmp;
@@ -84,8 +86,8 @@ public class AgentServiceStarter {
         return false;
     }
 
-    private static File downloadHttp(String urlStr, File tempFile) throws IOException {
-        var url = new URL(urlStr);
+    private static File downloadHttp(String urlStr, File tempFile) throws IOException, URISyntaxException {
+        var url = new URI(urlStr).toURL();
         var connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
 

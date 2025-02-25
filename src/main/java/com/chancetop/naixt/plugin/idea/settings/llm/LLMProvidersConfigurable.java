@@ -1,7 +1,7 @@
-package com.chancetop.naixt.settings.llm;
+package com.chancetop.naixt.plugin.idea.settings.llm;
 
-import com.chancetop.naixt.settings.NaixtSettingState;
-import com.chancetop.naixt.settings.NaixtSettingStateService;
+import com.chancetop.naixt.plugin.idea.settings.NaixtSettingState;
+import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.util.NlsContexts;
 import com.intellij.ui.components.JBTextField;

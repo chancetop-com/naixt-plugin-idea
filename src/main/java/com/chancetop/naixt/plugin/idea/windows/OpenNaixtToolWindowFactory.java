@@ -1,9 +1,10 @@
-package com.chancetop.naixt.windows;
+package com.chancetop.naixt.plugin.idea.windows;
 
-import com.chancetop.naixt.agent.AgentServerService;
-import com.chancetop.naixt.icons.NaixtIcons;
-import com.chancetop.naixt.server.AgentServiceManagementService;
-import com.chancetop.naixt.settings.NaixtSettingStateService;
+import com.chancetop.naixt.plugin.idea.agent.AgentServerService;
+import com.chancetop.naixt.agent.api.naixt.ChatResponse;
+import com.chancetop.naixt.plugin.idea.icons.NaixtIcons;
+import com.chancetop.naixt.plugin.idea.server.AgentServiceManagementService;
+import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.application.ApplicationManager;
@@ -19,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.util.Objects;
 
 /**
@@ -33,7 +35,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-        agentServerService = ApplicationManager.getApplication().getService(AgentServerService.class);
+        agentServerService = AgentServerService.getInstance();
         var mainPanel = new JPanel(new BorderLayout());
         mainPanel.add(createHeaderPanel(project), BorderLayout.NORTH);
         mainPanel.add(conversationScrollPane, BorderLayout.CENTER);
@@ -41,7 +43,11 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         conversationPanel.setLayout(new BoxLayout(conversationPanel, BoxLayout.Y_AXIS));
         toolWindow.getContentManager().addContent(ContentFactory.getInstance().createContent(mainPanel, "", false));
         mainPanel.getRootPane().setDefaultButton(sendButton);
-        addMessageToConversation("Hi @author, I'm Naixt, an AI agent that helps you coding.", false, false, false);
+        sendWelcomeMessage();
+    }
+
+    private void sendWelcomeMessage() {
+        addMessageToConversation(ChatResponse.of("Hi @author, I'm Naixt, an AI agent that helps you coding."), false, false, false);
     }
 
     private @NotNull JPanel createHeaderPanel(@NotNull Project project) {
@@ -55,6 +61,12 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
                 // handle new event
+                // for now, clear all
+                conversationPanel.removeAll();
+                sendWelcomeMessage();
+                conversationPanel.revalidate();
+                conversationPanel.repaint();
+                agentServerService.clearShortTermMemory();
             }
         });
         actionGroup.add(new AnAction("History", "Show history", NaixtIcons.History) {
@@ -103,7 +115,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                 Messages.showMessageDialog(project, "Empty input!", "Warning", Messages.getWarningIcon());
                 return;
             }
-            addMessageToConversation(text, true, false, false);
+            addMessageToConversation(ChatResponse.of(text), true, false, false);
             inputTextField.setText("");
 
             var rsp = agentServerService.send(text, project);
@@ -114,11 +126,11 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         return inputPanel;
     }
 
-    private boolean hasAction(String rsp) {
-        return true;
+    private boolean hasAction(ChatResponse rsp) {
+        return rsp.fileContents != null && !rsp.fileContents.isEmpty();
     }
 
-    private void addMessageToConversation(String message, boolean isUser, boolean showApprove, boolean showRegenerate) {
+    private void addMessageToConversation(ChatResponse message, boolean isUser, boolean showApprove, boolean showRegenerate) {
         var messagePanel = new JPanel(new BorderLayout());
         messagePanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, Color.DARK_GRAY),
@@ -129,7 +141,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         label.setFont(label.getFont().deriveFont(Font.BOLD));
         messagePanel.add(label, BorderLayout.NORTH);
 
-        var textArea = new JTextArea(message);
+        var textArea = new JTextArea(message.text);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setEditable(false);
@@ -140,7 +152,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
             var buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             if (showApprove) {
                 var approveButton = new JButton("Need Your Approve!");
-                approveButton.addActionListener(e -> handleApprove(message));
+                approveButton.addActionListener(e -> handleApprove(approveButton, e, message));
                 buttonPanel.add(approveButton);
             }
             if (showRegenerate) {
@@ -160,7 +172,8 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         });
     }
 
-    private void handleApprove(String command) {
+    private void handleApprove(JButton button, ActionEvent e, ChatResponse command) {
         System.out.println("Approving command: " + command);
+        button.setText("Approved");
     }
 }

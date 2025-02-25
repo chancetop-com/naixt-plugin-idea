@@ -1,4 +1,4 @@
-package com.chancetop.naixt.settings.agent;
+package com.chancetop.naixt.plugin.idea.settings.agent;
 
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.options.ConfigurationException;

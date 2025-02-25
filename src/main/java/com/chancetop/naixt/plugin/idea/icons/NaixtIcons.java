@@ -1,4 +1,4 @@
-package com.chancetop.naixt.icons;
+package com.chancetop.naixt.plugin.idea.icons;
 
 import com.intellij.openapi.util.IconLoader;
 

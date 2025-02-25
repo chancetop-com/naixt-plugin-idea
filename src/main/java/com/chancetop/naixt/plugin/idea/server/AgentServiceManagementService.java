@@ -1,9 +1,10 @@
-package com.chancetop.naixt.server;
+package com.chancetop.naixt.plugin.idea.server;
 
-import com.chancetop.naixt.agent.AgentServerService;
+import com.chancetop.naixt.plugin.idea.agent.AgentServerService;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.Messages;
 
 import java.io.IOException;
@@ -37,7 +38,7 @@ public final class AgentServiceManagementService {
     }
 
     public void stop() throws IOException {
-        AgentServerService.getInstance().stopServer();
+        AgentServerService.getInstance().stop();
     }
 
     public void stop(Project project) {

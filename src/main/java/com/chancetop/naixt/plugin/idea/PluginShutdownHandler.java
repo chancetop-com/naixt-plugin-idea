@@ -1,6 +1,6 @@
-package com.chancetop.naixt;
+package com.chancetop.naixt.plugin.idea;
 
-import com.chancetop.naixt.server.AgentServiceManagementService;
+import com.chancetop.naixt.plugin.idea.server.AgentServiceManagementService;
 import com.intellij.ide.AppLifecycleListener;
 import com.intellij.openapi.application.ApplicationManager;
 

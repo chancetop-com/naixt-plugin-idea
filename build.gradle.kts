@@ -10,6 +10,7 @@ group = "com.chancetop"
 version = "1.0-SNAPSHOT"
 
 repositories {
+  mavenLocal()
   mavenCentral()
   intellijPlatform {
     defaultRepositories()
@@ -55,7 +56,7 @@ tasks {
 }
 
 val coreNgVersion = "9.1.5"
-val agentServiceInterfaceVersion = "1.0.1"
+val agentServiceInterfaceVersion = "1.0.3-SNAPSHOT"
 
 dependencies {
   intellijPlatform {
@@ -70,7 +71,8 @@ dependencies {
   }
   testImplementation("junit:junit:4.13.2")
 
-  implementation("com.squareup.okhttp3:okhttp:4.12.0")
+  implementation("core.framework:core-ng:${coreNgVersion}")
   implementation("core.framework:core-ng-api:${coreNgVersion}")
   implementation("com.chancetop:agent-service-interface:${agentServiceInterfaceVersion}")
+  implementation("org.javassist:javassist:3.30.2-GA")
 }

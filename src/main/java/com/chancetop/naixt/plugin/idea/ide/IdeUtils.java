@@ -1,6 +1,6 @@
-package com.chancetop.naixt.ide;
+package com.chancetop.naixt.plugin.idea.ide;
 
-import com.chancetop.naixt.ide.internal.Position;
+import com.chancetop.naixt.plugin.idea.ide.internal.Position;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectRootManager;

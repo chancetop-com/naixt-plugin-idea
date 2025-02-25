@@ -1,4 +1,4 @@
-package com.chancetop.naixt.ide.internal;
+package com.chancetop.naixt.plugin.idea.ide.internal;
 
 /**
  * @author stephen

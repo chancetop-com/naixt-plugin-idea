@@ -24,7 +24,7 @@
 
   <application-components>
     <component>
-      <implementation-class>com.chancetop.naixt.PluginShutdownHandler</implementation-class>
+      <implementation-class>com.chancetop.naixt.plugin.idea.PluginShutdownHandler</implementation-class>
     </component>
   </application-components>
 
@@ -35,14 +35,14 @@
     <projectConfigurable parentId="tools"
                          id="com.chancetop.naixt.NaixtSetting"
                          displayName="Naixt Settings"
-                         instance="com.chancetop.naixt.settings.llm.LLMProvidersConfigurable"/>
+                         instance="com.chancetop.naixt.plugin.idea.settings.llm.LLMProvidersConfigurable"/>
 
-    <toolWindow factoryClass="com.chancetop.naixt.windows.OpenNaixtToolWindowFactory"
+    <toolWindow factoryClass="com.chancetop.naixt.plugin.idea.windows.OpenNaixtToolWindowFactory"
                 id="ChanceTop Naixt"
                 doNotActivateOnStart="true"
                 anchor="right"
                 secondary="true"
-                icon="com.chancetop.naixt.icons.NaixtIcons.NaixtToolWindow"/>
+                icon="com.chancetop.naixt.plugin.idea.icons.NaixtIcons.NaixtToolWindow"/>
 
   </extensions>
 
