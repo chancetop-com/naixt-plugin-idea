@@ -123,6 +123,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
             }
             addMessageToConversation(ChatResponse.of(text), true, false, false);
             inputTextField.setText("");
+            repaint(conversationScrollPane);
 
             var thinkingPanel = addThinkingIndicator();
 
