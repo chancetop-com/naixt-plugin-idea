@@ -1,9 +1,12 @@
 package com.chancetop.naixt.plugin.idea.ide;
 
 import com.chancetop.naixt.plugin.idea.ide.internal.Position;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectRootManager;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VfsUtil;
 
 /**
  * @author stephen
@@ -33,5 +36,14 @@ public class IdeUtils {
             return contentRoots[0].getPath();
         }
         return "";
+    }
+
+    public static void refreshWorkspace(String workspacePath) {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            var baseDir = LocalFileSystem.getInstance().findFileByPath(workspacePath);
+            if (baseDir != null) {
+                VfsUtil.markDirtyAndRefresh(true, true, false, baseDir);
+            }
+        });
     }
 }

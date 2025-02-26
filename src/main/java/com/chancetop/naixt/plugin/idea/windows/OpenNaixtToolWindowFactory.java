@@ -2,18 +2,17 @@ package com.chancetop.naixt.plugin.idea.windows;
 
 import com.chancetop.naixt.plugin.idea.agent.AgentServerService;
 import com.chancetop.naixt.agent.api.naixt.ChatResponse;
+import com.chancetop.naixt.plugin.idea.agent.ChatUtils;
 import com.chancetop.naixt.plugin.idea.icons.NaixtIcons;
+import com.chancetop.naixt.plugin.idea.ide.IdeUtils;
 import com.chancetop.naixt.plugin.idea.server.AgentServiceManagementService;
 import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.*;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.vfs.LocalFileSystem;
-import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.components.JBScrollPane;
@@ -23,7 +22,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.nio.file.Paths;
 import java.util.Objects;
 
 /**
@@ -34,12 +32,16 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     private final JScrollPane conversationScrollPane = new JBScrollPane(conversationPanel);
     private final JTextField inputTextField = new JTextField();
     private final JButton sendButton = new JButton("Send");
+    private AgentServiceManagementService agentServiceManagementService;
     private AgentServerService agentServerService;
+    private NaixtSettingStateService naixtSettingStateService;
     private String workspacePath;
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
         agentServerService = AgentServerService.getInstance();
+        agentServiceManagementService = AgentServiceManagementService.getInstance();
+        naixtSettingStateService = NaixtSettingStateService.getInstance();
         workspacePath = project.getBasePath();
         var mainPanel = new JPanel(new BorderLayout());
         mainPanel.add(createHeaderPanel(project), BorderLayout.NORTH);
@@ -69,8 +71,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                 // for now, clear all
                 conversationPanel.removeAll();
                 sendWelcomeMessage();
-                conversationPanel.revalidate();
-                conversationPanel.repaint();
+                repaint(conversationScrollPane);
                 agentServerService.clearShortTermMemory();
             }
         });
@@ -90,18 +91,18 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         actionGroup.add(new AnAction("Start Agent Server", "Start agent server", AllIcons.Actions.Run_anything) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
-                var agentServicePackageUrl = Objects.requireNonNull(NaixtSettingStateService.getInstance().getState()).getAgentPackageDownloadUrl();
+                var agentServicePackageUrl = Objects.requireNonNull(naixtSettingStateService.getState()).getAgentPackageDownloadUrl();
                 if (agentServicePackageUrl.isEmpty()) {
                     Messages.showMessageDialog(project, "Please set the agent package download url in settings!", "Warning", Messages.getWarningIcon());
                     return;
                 }
-                AgentServiceManagementService.getInstance().start(agentServicePackageUrl, project);
+                agentServiceManagementService.start(agentServicePackageUrl, project);
             }
         });
         actionGroup.add(new AnAction("Stop Agent Server", "Stop agent server", AllIcons.Actions.Suspend) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
-                AgentServiceManagementService.getInstance().stop(project);
+                agentServiceManagementService.stop(project);
             }
         });
 
@@ -123,16 +124,32 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
             addMessageToConversation(ChatResponse.of(text), true, false, false);
             inputTextField.setText("");
 
-            var rsp = agentServerService.send(text, project);
-            addMessageToConversation(rsp, false, hasAction(rsp), true);
+            var thinkingPanel = addThinkingIndicator();
+
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    var rsp = agentServerService.send(text, project);
+                    conversationPanel.remove(thinkingPanel);
+                    addMessageToConversation(rsp, false, ChatUtils.hasAction(rsp), true);
+                    repaint(conversationScrollPane);
+                } catch (Exception ex) {
+                    conversationPanel.remove(thinkingPanel);
+                    addMessageToConversation(ChatResponse.of("Sorry, an error occurred: " + ex.getMessage()), false, false, false);
+                    repaint(conversationScrollPane);
+                }
+            });
         });
         inputPanel.add(inputTextField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
         return inputPanel;
     }
 
-    private boolean hasAction(ChatResponse rsp) {
-        return rsp.fileContents != null && !rsp.fileContents.isEmpty();
+    private JPanel addThinkingIndicator() {
+        var thinkingPanel = ThinkingIndicator.createThinkingIndicator();
+        conversationPanel.add(thinkingPanel);
+        repaint(conversationScrollPane);
+        scrollBottom(conversationScrollPane);
+        return thinkingPanel;
     }
 
     private void addMessageToConversation(ChatResponse message, boolean isUser, boolean showApprove, boolean showRegenerate) {
@@ -168,68 +185,28 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         }
 
         conversationPanel.add(messagePanel);
-        conversationPanel.revalidate();
-        conversationPanel.repaint();
+        repaint(conversationScrollPane);
+        scrollBottom(conversationScrollPane);
+    }
 
+    private void scrollBottom(JScrollPane pane) {
         SwingUtilities.invokeLater(() -> {
-            var vertical = conversationScrollPane.getVerticalScrollBar();
+            repaint(pane);
+            var vertical = pane.getVerticalScrollBar();
             vertical.setValue(vertical.getMaximum());
         });
     }
 
-    private void handleApprove(JButton button, ActionEvent e, ChatResponse msg) {
-        var dialog = new JDialog();
-        dialog.setTitle("Change List");
-        dialog.setSize(600, 400);
-        dialog.setLayout(new BorderLayout());
-
-        if (msg.fileContents != null && !msg.fileContents.isEmpty()) {
-            var filePanel = new JPanel();
-            filePanel.setLayout(new BoxLayout(filePanel, BoxLayout.Y_AXIS));
-            for (var fileContent : msg.fileContents) {
-                var fileTextArea = new JTextArea(String.format("File: %s\nAction: %s\nDiff: \n%s\n",
-                        fileContent.filePath,
-                        fileContent.action.toString(),
-                        fileContent.content));
-                fileTextArea.setEditable(false);
-                fileTextArea.setLineWrap(true);
-                fileTextArea.setWrapStyleWord(true);
-                filePanel.add(new JScrollPane(fileTextArea));
-                filePanel.add(Box.createRigidArea(new Dimension(0, 10)));
-            }
-            dialog.add(new JScrollPane(filePanel), BorderLayout.CENTER);
-        }
-
-        var buttonPanel = createButtonPanel(button, msg, dialog);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
-
-        dialog.setLocationRelativeTo(null);
-        dialog.setVisible(true);
+    private void repaint(JScrollPane pane) {
+        pane.revalidate();
+        pane.repaint();
     }
 
-    private @NotNull JPanel createButtonPanel(JButton button, ChatResponse msg, JDialog dialog) {
-        var buttonPanel = new JPanel();
-        var confirmButton = new JButton("OK");
-        var cancelButton = new JButton("Cancel");
-
-        confirmButton.addActionListener(e1 -> {
+    private void handleApprove(JButton button, ActionEvent e, ChatResponse msg) {
+        ApprovePanel.showApprovePanel(msg, () -> {
             button.setText("Approved");
             agentServerService.approve(msg);
-
-            ApplicationManager.getApplication().invokeLater(() -> {
-                var baseDir = LocalFileSystem.getInstance().findFileByPath(workspacePath);
-                if (baseDir != null) {
-                    VfsUtil.markDirtyAndRefresh(true, true, false, baseDir);
-                }
-            });
-
-            dialog.dispose();
+            IdeUtils.refreshWorkspace(workspacePath);
         });
-
-        cancelButton.addActionListener(e1 -> dialog.dispose());
-
-        buttonPanel.add(confirmButton);
-        buttonPanel.add(cancelButton);
-        return buttonPanel;
     }
 }
