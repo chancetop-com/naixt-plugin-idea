@@ -23,9 +23,10 @@ public class ApprovePanel {
             fileTextArea.setEditable(false);
             fileTextArea.setLineWrap(true);
             fileTextArea.setWrapStyleWord(true);
+            filePanel.add(fileTextArea);
             filePanel.add(Box.createRigidArea(new Dimension(0, 10)));
         }
-        dialog.add(new JScrollPane(filePanel), BorderLayout.CENTER);
+        dialog.add(new JScrollPane(filePanel));
 
         var buttonPanel = createButtonPanel(dialog, afterApproved);
         dialog.add(buttonPanel, BorderLayout.SOUTH);

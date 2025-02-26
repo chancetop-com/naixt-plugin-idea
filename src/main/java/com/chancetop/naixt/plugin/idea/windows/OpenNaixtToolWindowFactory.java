@@ -71,7 +71,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                 // for now, clear all
                 conversationPanel.removeAll();
                 sendWelcomeMessage();
-                repaint(conversationScrollPane);
+                repaintConversationPanel();
                 agentServerService.clearShortTermMemory();
             }
         });
@@ -123,23 +123,32 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
             }
             addMessageToConversation(ChatResponse.of(text), true, false, false);
             inputTextField.setText("");
-            repaint(conversationScrollPane);
 
             var thinkingPanel = addThinkingIndicator();
+            scrollBottom();
 
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    var rsp = agentServerService.send(text, project);
-                    conversationPanel.remove(thinkingPanel);
-                    addMessageToConversation(rsp, false, ChatUtils.hasAction(rsp), true);
-                    repaint(conversationScrollPane);
-                } catch (Exception ex) {
-                    conversationPanel.remove(thinkingPanel);
-                    addMessageToConversation(ChatResponse.of("Sorry, an error occurred: " + ex.getMessage()), false, false, false);
-                    repaint(conversationScrollPane);
+            var info = IdeUtils.getInfo(project);
+            new SwingWorker<ChatResponse, Void>() {
+                @Override
+                protected ChatResponse doInBackground() throws Exception {
+                    return agentServerService.send(text, info);
                 }
-            });
+                @Override
+                protected void done() {
+                    try {
+                        var rsp = get();
+                        conversationPanel.remove(thinkingPanel);
+                        addMessageToConversation(rsp, false, ChatUtils.hasAction(rsp), true);
+                        scrollBottom();
+                    } catch (Exception ex) {
+                        conversationPanel.remove(thinkingPanel);
+                        addMessageToConversation(ChatResponse.of("Sorry, an error occurred: " + ex.getMessage()), false, false, false);
+                        scrollBottom();
+                    }
+                }
+            }.execute();
         });
+
         inputPanel.add(inputTextField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
         return inputPanel;
@@ -148,7 +157,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     private JPanel addThinkingIndicator() {
         var thinkingPanel = ThinkingIndicator.createThinkingIndicator();
         conversationPanel.add(thinkingPanel);
-        repaintAndScrollBottom(conversationScrollPane);
+        scrollBottom();
         return thinkingPanel;
     }
 
@@ -185,20 +194,38 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         }
 
         conversationPanel.add(messagePanel);
-        repaintAndScrollBottom(conversationScrollPane);
+        conversationPanel.validate();
+        conversationPanel.paintImmediately(conversationPanel.getBounds());
+        scrollBottom();
     }
 
-    private void repaintAndScrollBottom(JScrollPane pane) {
+    private void scrollBottom() {
         SwingUtilities.invokeLater(() -> {
-            repaint(pane);
-            var vertical = pane.getVerticalScrollBar();
+            conversationPanel.validate();
+            conversationPanel.paintImmediately(conversationPanel.getBounds());
+            conversationScrollPane.validate();
+            conversationScrollPane.paintImmediately(conversationScrollPane.getBounds());
+
+            var components = conversationPanel.getComponents();
+            if (components.length > 0) {
+                Rectangle lastRect = components[components.length - 1].getBounds();
+                conversationPanel.scrollRectToVisible(new Rectangle(
+                        0,
+                        lastRect.y + lastRect.height + 10,
+                        1,
+                        1
+                ));
+            }
+
+            var vertical = conversationScrollPane.getVerticalScrollBar();
             vertical.setValue(vertical.getMaximum());
         });
     }
 
-    private void repaint(JScrollPane pane) {
-        pane.revalidate();
-        pane.repaint();
+
+    private void repaintConversationPanel() {
+        conversationPanel.revalidate();
+        conversationPanel.repaint();
     }
 
     private void handleApprove(JButton button, ActionEvent e, ChatResponse msg) {

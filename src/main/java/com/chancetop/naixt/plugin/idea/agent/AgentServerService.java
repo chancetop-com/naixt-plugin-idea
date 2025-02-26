@@ -6,6 +6,7 @@ import com.chancetop.naixt.agent.api.naixt.ApproveChangeRequest;
 import com.chancetop.naixt.agent.api.naixt.ChatResponse;
 import com.chancetop.naixt.agent.api.naixt.NaixtChatRequest;
 import com.chancetop.naixt.plugin.idea.ide.IdeUtils;
+import com.chancetop.naixt.plugin.idea.ide.internal.IdeCurrentInfo;
 import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
@@ -66,14 +67,14 @@ public final class AgentServerService {
         naixtAgentWebService.clear();
     }
 
-    public ChatResponse send(String text, Project project) {
+    public ChatResponse send(String text, IdeCurrentInfo info) {
         var state = ApplicationManager.getApplication().getService(NaixtSettingStateService.class).getState();
         var request = new NaixtChatRequest();
         request.query = text;
-        request.workspacePath = IdeUtils.getProjectPath(project);
-        request.currentFilePath = IdeUtils.getCurrentFilePath(project);
-        request.currentLineNumber = IdeUtils.getCurrentPosition(project).line();
-        request.currentColumnNumber = IdeUtils.getCurrentPosition(project).column();
+        request.workspacePath = info.workspacePath();
+        request.currentFilePath = info.currentFilePath();
+        request.currentLineNumber = info.position().line();
+        request.currentColumnNumber = info.position().column();
         request.model = state == null ? "" : state.getLlmProviderModel();
         return naixtAgentWebService.chat(request);
     }

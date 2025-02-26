@@ -1,5 +1,6 @@
 package com.chancetop.naixt.plugin.idea.ide;
 
+import com.chancetop.naixt.plugin.idea.ide.internal.IdeCurrentInfo;
 import com.chancetop.naixt.plugin.idea.ide.internal.Position;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
@@ -36,6 +37,10 @@ public class IdeUtils {
             return contentRoots[0].getPath();
         }
         return "";
+    }
+
+    public static IdeCurrentInfo getInfo(Project project) {
+        return new IdeCurrentInfo(getProjectPath(project), getCurrentFilePath(project), getCurrentPosition(project));
     }
 
     public static void refreshWorkspace(String workspacePath) {
