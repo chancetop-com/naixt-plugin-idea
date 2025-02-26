@@ -16,19 +16,16 @@ public class ApprovePanel {
         dialog.setSize(600, 400);
         dialog.setLayout(new BorderLayout());
 
-        if (msg.fileContents != null && !msg.fileContents.isEmpty()) {
-            var filePanel = new JPanel();
-            filePanel.setLayout(new BoxLayout(filePanel, BoxLayout.Y_AXIS));
-            for (var fileContent : msg.fileContents) {
-                var fileTextArea = new JTextArea(String.format("File: %s\nAction: %s\nDiff: \n%s\n", fileContent.filePath, fileContent.action.toString(), fileContent.content));
-                fileTextArea.setEditable(false);
-                fileTextArea.setLineWrap(true);
-                fileTextArea.setWrapStyleWord(true);
-                filePanel.add(new JScrollPane(fileTextArea));
-                filePanel.add(Box.createRigidArea(new Dimension(0, 10)));
-            }
-            dialog.add(new JScrollPane(filePanel), BorderLayout.CENTER);
+        var filePanel = new JPanel();
+        filePanel.setLayout(new BoxLayout(filePanel, BoxLayout.Y_AXIS));
+        for (var fileContent : msg.fileContents) {
+            var fileTextArea = new JTextArea(String.format("File: %s\nAction: %s\nDiff: \n%s\n", fileContent.filePath, fileContent.action.toString(), fileContent.content));
+            fileTextArea.setEditable(false);
+            fileTextArea.setLineWrap(true);
+            fileTextArea.setWrapStyleWord(true);
+            filePanel.add(Box.createRigidArea(new Dimension(0, 10)));
         }
+        dialog.add(new JScrollPane(filePanel), BorderLayout.CENTER);
 
         var buttonPanel = createButtonPanel(dialog, afterApproved);
         dialog.add(buttonPanel, BorderLayout.SOUTH);

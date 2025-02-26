@@ -147,8 +147,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     private JPanel addThinkingIndicator() {
         var thinkingPanel = ThinkingIndicator.createThinkingIndicator();
         conversationPanel.add(thinkingPanel);
-        repaint(conversationScrollPane);
-        scrollBottom(conversationScrollPane);
+        repaintAndScrollBottom(conversationScrollPane);
         return thinkingPanel;
     }
 
@@ -185,11 +184,10 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         }
 
         conversationPanel.add(messagePanel);
-        repaint(conversationScrollPane);
-        scrollBottom(conversationScrollPane);
+        repaintAndScrollBottom(conversationScrollPane);
     }
 
-    private void scrollBottom(JScrollPane pane) {
+    private void repaintAndScrollBottom(JScrollPane pane) {
         SwingUtilities.invokeLater(() -> {
             repaint(pane);
             var vertical = pane.getVerticalScrollBar();
