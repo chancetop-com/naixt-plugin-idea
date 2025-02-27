@@ -35,6 +35,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     private AgentServiceManagementService agentServiceManagementService;
     private AgentServerService agentServerService;
     private NaixtSettingStateService naixtSettingStateService;
+    private Project project;
     private String workspacePath;
 
     @Override
@@ -42,11 +43,12 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         agentServerService = AgentServerService.getInstance();
         agentServiceManagementService = AgentServiceManagementService.getInstance();
         naixtSettingStateService = NaixtSettingStateService.getInstance();
+        this.project = project;
         workspacePath = project.getBasePath();
         var mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(createHeaderPanel(project), BorderLayout.NORTH);
+        mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
         mainPanel.add(conversationScrollPane, BorderLayout.CENTER);
-        mainPanel.add(createInputPanel(project), BorderLayout.SOUTH);
+        mainPanel.add(createInputPanel(), BorderLayout.SOUTH);
         conversationPanel.setLayout(new BoxLayout(conversationPanel, BoxLayout.Y_AXIS));
         toolWindow.getContentManager().addContent(ContentFactory.getInstance().createContent(mainPanel, "", false));
         mainPanel.getRootPane().setDefaultButton(sendButton);
@@ -57,7 +59,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         addMessageToConversation(ChatResponse.of("Hi @author, I'm Naixt, an AI agent that helps you coding."), false, false, false);
     }
 
-    private @NotNull JPanel createHeaderPanel(@NotNull Project project) {
+    private @NotNull JPanel createHeaderPanel() {
         var headerPanel = new JPanel(new BorderLayout());
         var nameLabel = new JLabel("New Conversation");
         headerPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
@@ -113,7 +115,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         return headerPanel;
     }
 
-    private @NotNull JPanel createInputPanel(@NotNull Project project) {
+    private @NotNull JPanel createInputPanel() {
         var inputPanel = new JPanel(new BorderLayout());
         sendButton.addActionListener(l -> {
             var text = inputTextField.getText();
@@ -121,37 +123,42 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                 Messages.showMessageDialog(project, "Empty input!", "Warning", Messages.getWarningIcon());
                 return;
             }
+            NaixtToolWindowUtil.clearLastMessageRegenerateButton(conversationPanel);
             addMessageToConversation(ChatResponse.of(text), true, false, false);
             inputTextField.setText("");
 
-            var thinkingPanel = addThinkingIndicator();
-            scrollBottom();
-
-            var info = IdeUtils.getInfo(project);
-            new SwingWorker<ChatResponse, Void>() {
-                @Override
-                protected ChatResponse doInBackground() throws Exception {
-                    return agentServerService.send(text, info);
-                }
-                @Override
-                protected void done() {
-                    try {
-                        var rsp = get();
-                        conversationPanel.remove(thinkingPanel);
-                        addMessageToConversation(rsp, false, ChatUtils.hasAction(rsp), true);
-                        scrollBottom();
-                    } catch (Exception ex) {
-                        conversationPanel.remove(thinkingPanel);
-                        addMessageToConversation(ChatResponse.of("Sorry, an error occurred: " + ex.getMessage()), false, false, false);
-                        scrollBottom();
-                    }
-                }
-            }.execute();
+            responseToConversation(text);
         });
 
         inputPanel.add(inputTextField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
         return inputPanel;
+    }
+
+    private void responseToConversation(String text) {
+        var thinkingPanel = addThinkingIndicator();
+        scrollBottom();
+
+        var info = IdeUtils.getInfo(project);
+        new SwingWorker<ChatResponse, Void>() {
+            @Override
+            protected ChatResponse doInBackground() throws Exception {
+                return agentServerService.send(text, info);
+            }
+            @Override
+            protected void done() {
+                try {
+                    var rsp = get();
+                    conversationPanel.remove(thinkingPanel);
+                    addMessageToConversation(rsp, false, ChatUtils.hasAction(rsp), true);
+                    scrollBottom();
+                } catch (Exception ex) {
+                    conversationPanel.remove(thinkingPanel);
+                    addMessageToConversation(ChatResponse.of("Sorry, an error occurred: " + ex.getMessage()), false, false, false);
+                    scrollBottom();
+                }
+            }
+        }.execute();
     }
 
     private JPanel addThinkingIndicator() {
@@ -188,6 +195,10 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
             }
             if (showRegenerate) {
                 var regenerateButton = new JButton("Regenerate");
+                regenerateButton.addActionListener(e -> {
+                    conversationPanel.remove(messagePanel);
+                    responseToConversation("Think and regenerate the response");
+                });
                 buttonPanel.add(regenerateButton);
             }
             messagePanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -221,7 +232,6 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
             vertical.setValue(vertical.getMaximum());
         });
     }
-
 
     private void repaintConversationPanel() {
         conversationPanel.revalidate();
