@@ -15,6 +15,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
+import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.content.ContentFactory;
 import org.jetbrains.annotations.NotNull;
@@ -171,7 +172,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     private void addMessageToConversation(ChatResponse message, boolean isUser, boolean showApprove, boolean showRegenerate) {
         var messagePanel = new JPanel(new BorderLayout());
         messagePanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, Color.DARK_GRAY),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, JBColor.DARK_GRAY),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
 

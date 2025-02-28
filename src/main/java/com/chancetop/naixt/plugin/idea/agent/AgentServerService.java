@@ -5,12 +5,10 @@ import com.chancetop.naixt.agent.api.NaixtWebService;
 import com.chancetop.naixt.agent.api.naixt.ApproveChangeRequest;
 import com.chancetop.naixt.agent.api.naixt.ChatResponse;
 import com.chancetop.naixt.agent.api.naixt.NaixtChatRequest;
-import com.chancetop.naixt.plugin.idea.ide.IdeUtils;
 import com.chancetop.naixt.plugin.idea.ide.internal.IdeCurrentInfo;
 import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
-import com.intellij.openapi.project.Project;
 import core.framework.http.HTTPClient;
 import core.framework.internal.bean.BeanClassValidator;
 import core.framework.internal.web.bean.RequestBeanWriter;
@@ -68,7 +66,7 @@ public final class AgentServerService {
     }
 
     public ChatResponse send(String text, IdeCurrentInfo info) {
-        var state = ApplicationManager.getApplication().getService(NaixtSettingStateService.class).getState();
+        var state = NaixtSettingStateService.getInstance().getState();
         var request = new NaixtChatRequest();
         request.query = text;
         request.workspacePath = info.workspacePath();

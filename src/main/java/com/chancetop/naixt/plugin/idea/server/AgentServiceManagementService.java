@@ -4,10 +4,7 @@ import com.chancetop.naixt.plugin.idea.agent.AgentServerService;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.Messages;
-
-import java.io.IOException;
 
 /**
  * @author stephen
@@ -37,19 +34,18 @@ public final class AgentServiceManagementService {
         }
     }
 
-    public void stop() throws IOException {
-        AgentServerService.getInstance().stop();
-    }
-
-    public void stop(Project project) {
+    public void stop() {
         try {
-            stop();
-        } catch (IOException e) {
-            if (!e.getMessage().contains("Failed to connect")) {
-                Messages.showMessageDialog(project, "Stop agent server failed!" + e.getMessage(), "Warning", Messages.getErrorIcon());
+            AgentServerService.getInstance().stop();
+        } catch (Exception e) {
+            if (!e.getMessage().contains("Failed to connect") || !e.getMessage().contains("http request failed")) {
                 throw new RuntimeException("Failed to stop service", e);
             }
         }
+    }
+
+    public void stop(Project project) {
+        stop();
         if (!isRunning || process == null) {
             Messages.showMessageDialog(project, "Agent server is not running", "Warning", Messages.getWarningIcon());
             return;

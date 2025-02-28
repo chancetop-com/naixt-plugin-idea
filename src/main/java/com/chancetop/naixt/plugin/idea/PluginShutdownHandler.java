@@ -6,8 +6,6 @@ import com.intellij.openapi.application.ApplicationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
 /**
  * @author stephen
  */
@@ -19,10 +17,6 @@ public class PluginShutdownHandler implements AppLifecycleListener {
 
     @Override
     public void appWillBeClosed(boolean isRestart) {
-        try {
-            ApplicationManager.getApplication().getService(AgentServiceManagementService.class).stop();
-        } catch (IOException e) {
-            logger.error("failed to stop agent service", e);
-        }
-    }
+		AgentServiceManagementService.getInstance().stop();
+	}
 }

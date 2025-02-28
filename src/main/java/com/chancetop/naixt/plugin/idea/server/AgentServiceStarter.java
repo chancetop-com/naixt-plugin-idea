@@ -161,8 +161,8 @@ public class AgentServiceStarter {
     }
 
     private static Process startService(String dir) throws IOException {
-        var binDir = new File(dir, "example-service");
-        var batFile = new File(binDir, "bin/example-service.bat");
+        var binDir = new File(dir, "agent-service");
+        var batFile = new File(binDir, "bin/agent-service.bat");
 
         if (!batFile.exists()) {
             throw new FileNotFoundException("Batch file not found: " + batFile.getAbsolutePath());
@@ -173,6 +173,9 @@ public class AgentServiceStarter {
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
+        var env = pb.environment();
+        env.put("SYS_LLM_APIKEY", System.getenv("SYS_LLM_APIKEY"));
+        env.put("SYS_LLM_ENDPOINT", System.getenv("SYS_LLM_ENDPOINT"));
         return pb.start();
     }
 }

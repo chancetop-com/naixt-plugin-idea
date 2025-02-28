@@ -7,6 +7,8 @@ import com.intellij.diff.DiffManager;
 import com.intellij.diff.requests.SimpleDiffRequest;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.ui.components.JBList;
+import com.intellij.ui.components.JBScrollPane;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -28,7 +30,7 @@ public class ApprovePanel {
         for (var fileContent : msg.fileContents) {
             fileListModel.addElement(fileContent.filePath + " - " + fileContent.action.toString());
         }
-        var fileList = new JList<>(fileListModel);
+        var fileList = new JBList<>(fileListModel);
         fileList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         var diffArea = new JTextPane();
@@ -55,7 +57,7 @@ public class ApprovePanel {
             }
         });
 
-        dialog.add(new JScrollPane(fileList), BorderLayout.CENTER);
+        dialog.add(new JBScrollPane(fileList), BorderLayout.CENTER);
 
         var buttonPanel = createButtonPanel(dialog, afterApproved);
         dialog.add(buttonPanel, BorderLayout.SOUTH);

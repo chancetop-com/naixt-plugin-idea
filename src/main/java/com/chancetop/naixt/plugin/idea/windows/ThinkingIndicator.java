@@ -1,5 +1,7 @@
 package com.chancetop.naixt.plugin.idea.windows;
 
+import com.intellij.ui.JBColor;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -10,7 +12,7 @@ public class ThinkingIndicator {
     public static JPanel createThinkingIndicator() {
         var thinkingPanel = new JPanel(new BorderLayout());
         thinkingPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, Color.DARK_GRAY),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, JBColor.DARK_GRAY),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
 
