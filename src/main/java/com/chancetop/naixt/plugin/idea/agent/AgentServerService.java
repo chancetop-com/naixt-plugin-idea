@@ -79,8 +79,9 @@ public final class AgentServerService {
         return naixtAgentWebService.chat(request);
     }
 
-    public void approve(ChatResponse msg) {
+    public void approve(ChatResponse msg, String workspacePath) {
         var req = new ApproveChangeRequest();
+        req.workspacePath = workspacePath;
         req.fileContents = msg.fileContents;
         naixtAgentWebService.approved(req);
     }

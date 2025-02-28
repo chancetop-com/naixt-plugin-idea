@@ -36,7 +36,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     private AgentServerService agentServerService;
     private NaixtSettingStateService naixtSettingStateService;
     private Project project;
-    private String workspacePath;
+    private String workspaceBasePath;
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
@@ -44,7 +44,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         agentServiceManagementService = AgentServiceManagementService.getInstance();
         naixtSettingStateService = NaixtSettingStateService.getInstance();
         this.project = project;
-        workspacePath = project.getBasePath();
+        workspaceBasePath = project.getBasePath();
         var mainPanel = new JPanel(new BorderLayout());
         mainPanel.add(createHeaderPanel(), BorderLayout.NORTH);
         mainPanel.add(conversationScrollPane, BorderLayout.CENTER);
@@ -239,10 +239,10 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     }
 
     private void handleApprove(JButton button, ActionEvent e, ChatResponse msg) {
-        ApprovePanel.showApprovePanel(msg, () -> {
+        ApprovePanel.showApprovePanel(project, msg, () -> {
             button.setText("Approved");
-            agentServerService.approve(msg);
-            IdeUtils.refreshWorkspace(workspacePath);
+            agentServerService.approve(msg, workspaceBasePath);
+            IdeUtils.refreshWorkspace(workspaceBasePath);
         });
     }
 }
