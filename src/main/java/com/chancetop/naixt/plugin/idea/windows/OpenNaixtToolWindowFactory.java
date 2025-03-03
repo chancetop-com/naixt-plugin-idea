@@ -57,7 +57,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     }
 
     private void sendWelcomeMessage() {
-        addMessageToConversation(ChatResponse.of("Hi @author, I'm Naixt, an AI agent that helps you coding."), false, false, false);
+        addMessageToConversation(ChatResponse.of(MessageHeaderPanel.HELLO_MESSAGE), false, false, false);
     }
 
     private @NotNull JPanel createHeaderPanel() {
@@ -176,9 +176,8 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
 
-        var label = new JLabel(isUser ? "You:" : "Naixt:");
-        label.setFont(label.getFont().deriveFont(Font.BOLD));
-        messagePanel.add(label, BorderLayout.NORTH);
+        var header = MessageHeaderPanel.createMessageHeaderPanel(message, isUser);
+        messagePanel.add(header, BorderLayout.NORTH);
 
         var textArea = new JTextArea(message.text);
         textArea.setLineWrap(true);
