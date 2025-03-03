@@ -124,7 +124,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                 Messages.showMessageDialog(project, "Empty input!", "Warning", Messages.getWarningIcon());
                 return;
             }
-            NaixtToolWindowUtil.clearLastMessageRegenerateButton(conversationPanel);
+            MessageHeaderPanel.clearLastMessageRegenerateButton(conversationPanel);
             addMessageToConversation(ChatResponse.of(text), true, false, false);
             inputTextField.setText("");
 
@@ -172,11 +172,14 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     private void addMessageToConversation(ChatResponse message, boolean isUser, boolean showApprove, boolean showRegenerate) {
         var messagePanel = new JPanel(new BorderLayout());
         messagePanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, JBColor.DARK_GRAY),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, isUser ? JBColor.LIGHT_GRAY : JBColor.DARK_GRAY),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
 
-        var header = MessageHeaderPanel.createMessageHeaderPanel(message, isUser);
+        var header = MessageHeaderPanel.createMessageHeaderPanel(message, isUser, showRegenerate, () -> {
+            conversationPanel.remove(messagePanel);
+            responseToConversation("Think and regenerate the response");
+        });
         messagePanel.add(header, BorderLayout.NORTH);
 
         var textArea = new JTextArea(message.text);
@@ -192,14 +195,6 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                 var approveButton = new JButton("Need Your Approve!");
                 approveButton.addActionListener(e -> handleApprove(approveButton, e, message));
                 buttonPanel.add(approveButton);
-            }
-            if (showRegenerate) {
-                var regenerateButton = new JButton("Regenerate");
-                regenerateButton.addActionListener(e -> {
-                    conversationPanel.remove(messagePanel);
-                    responseToConversation("Think and regenerate the response");
-                });
-                buttonPanel.add(regenerateButton);
             }
             messagePanel.add(buttonPanel, BorderLayout.SOUTH);
         }
