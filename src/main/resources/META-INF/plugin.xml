@@ -14,8 +14,13 @@
        Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
        Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
   <description><![CDATA[
-    The nAIxt coding agent.<br>
-    <em>Description of plugin in html tags...</em>
+    The Naixt coding agent.<br>
+    How to use it:<br>
+    1. Open the Naixt tool window.<br>
+    2. Option A: Click the "Settings" button to configure the Naixt coding agent, especially the server package section.<br>
+    2. Option B: Run Naixt coding agent server locally by yourself.<br>
+    3. Click the "Start" button to start the Naixt coding agent. If you run the Naixt coding agent server by yourself skip this step.<br>
+    4. Chat with the Naixt coding agent in the Naixt tool window.<br>
   ]]></description>
 
   <!-- Product and plugin compatibility requirements.
