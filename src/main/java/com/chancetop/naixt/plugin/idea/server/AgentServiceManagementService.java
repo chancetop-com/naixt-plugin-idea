@@ -35,13 +35,7 @@ public final class AgentServiceManagementService {
     }
 
     public void stop() {
-        try {
-            AgentServerService.getInstance().stop();
-        } catch (Exception e) {
-            if (!e.getMessage().contains("Failed to connect") || !e.getMessage().contains("http request failed")) {
-                throw new RuntimeException("Failed to stop service", e);
-            }
-        }
+        AgentServerService.getInstance().stop();
     }
 
     public void stop(Project project) {

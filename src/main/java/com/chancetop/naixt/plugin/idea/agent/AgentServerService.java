@@ -58,11 +58,19 @@ public final class AgentServerService {
     }
 
     public void stop() {
-        naixtWebService.stop();
+        try {
+            naixtWebService.stop();
+        } catch (Exception e) {
+            logger.warn("failed to stop agent server", e);
+        }
     }
 
     public void clearShortTermMemory() {
-        naixtAgentWebService.clear();
+        try {
+            naixtAgentWebService.clear();
+        } catch (Exception e) {
+            logger.warn("failed to clear memory", e);
+        }
     }
 
     public ChatResponse send(String text, IdeCurrentInfo info) {

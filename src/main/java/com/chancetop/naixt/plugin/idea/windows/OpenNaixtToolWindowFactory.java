@@ -144,7 +144,12 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         new SwingWorker<ChatResponse, Void>() {
             @Override
             protected ChatResponse doInBackground() throws Exception {
-                return agentServerService.send(text, info);
+                try {
+                    return agentServerService.send(text, info);
+                } catch (Exception e) {
+                    Messages.showMessageDialog(project, "Failed to send message to agent", "Warning", Messages.getWarningIcon());
+                }
+                return ChatResponse.of("Sorry, an error occurred");
             }
             @Override
             protected void done() {
@@ -235,9 +240,13 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
 
     private void handleApprove(JButton button, ActionEvent e, ChatResponse msg) {
         ApprovePanel.showApprovePanel(project, msg, () -> {
-            button.setText("Approved");
-            agentServerService.approve(msg, workspaceBasePath);
-            IdeUtils.refreshWorkspace(workspaceBasePath);
+            try {
+                button.setText("Approved");
+                agentServerService.approve(msg, workspaceBasePath);
+                IdeUtils.refreshWorkspace(workspaceBasePath);
+            } catch (Exception ex) {
+                Messages.showMessageDialog(project, "Failed to approve, please check the agent status and try again", "Warning", Messages.getWarningIcon());
+            }
         });
     }
 }
