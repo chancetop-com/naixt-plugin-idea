@@ -8,6 +8,7 @@ public class NaixtSettingState {
     private String llmProviderUrl = "";
     private String llmProviderApiKey = "";
     private String llmProviderModel = "";
+    private String planningModel = "";
     private String agentPackageDownloadUrl = "";
 
     public String getLlmProvider() {
@@ -48,5 +49,13 @@ public class NaixtSettingState {
 
     public void setAgentPackageDownloadUrl(String agentPackageDownloadUrl) {
         this.agentPackageDownloadUrl = agentPackageDownloadUrl;
+    }
+
+    public String getPlanningModel() {
+        return planningModel;
+    }
+
+    public void setPlanningModel(String planningModel) {
+        this.planningModel = planningModel;
     }
 }

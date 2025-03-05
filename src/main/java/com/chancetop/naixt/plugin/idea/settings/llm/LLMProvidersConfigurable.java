@@ -3,8 +3,10 @@ package com.chancetop.naixt.plugin.idea.settings.llm;
 import com.chancetop.naixt.plugin.idea.settings.NaixtSettingState;
 import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
 import com.intellij.openapi.options.Configurable;
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.util.NlsContexts;
 import com.intellij.ui.components.JBTextField;
+import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
@@ -14,11 +16,12 @@ import java.awt.*;
  * Author: stephen
  */
 public class LLMProvidersConfigurable implements Configurable {
-    private final JComboBox<String> providerComboBox = new JComboBox<>(new String[]{"LiteLLM", "Azure OpenAI", "OpenAI"});
+    private final JComboBox<String> providerComboBox = new ComboBox<>(new String[]{"LiteLLM", "Azure OpenAI", "OpenAI"});
     private final JPanel mainPanel = new JPanel();
     private final JPanel dynamicPanel = new JPanel();
     private final JBTextField endpointField = new JBTextField();
     private final JBTextField modelField = new JBTextField();
+    private final JBTextField planningModelField = new JBTextField();
     private final JBTextField apiKeyField = new JBTextField();
     private final JBTextField agentPackageUrlField = new JBTextField();
     private NaixtSettingState state;
@@ -72,7 +75,7 @@ public class LLMProvidersConfigurable implements Configurable {
         var gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.EAST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = JBUI.insets(5);
 
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -91,7 +94,7 @@ public class LLMProvidersConfigurable implements Configurable {
         var gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.EAST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = JBUI.insets(5);
 
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -102,6 +105,13 @@ public class LLMProvidersConfigurable implements Configurable {
         gbc.weightx = 1.0;
 
         panel.add(modelField, gbc);
+
+        gbc.gridx += 1;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Planning Model Name:"), gbc);
+        gbc.gridx += 1;
+        gbc.weightx = 1.0;
+        panel.add(planningModelField, gbc);
         return panel;
     }
 
@@ -109,7 +119,7 @@ public class LLMProvidersConfigurable implements Configurable {
         var panel = new JPanel(new GridBagLayout());
         var gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.EAST;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = JBUI.insets(5);
 
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -130,7 +140,7 @@ public class LLMProvidersConfigurable implements Configurable {
 
         var gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.EAST;
-        gbc.insets = new Insets(5, 0, 5, 5);
+        gbc.insets = JBUI.insets(5, 0, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         if ("LiteLLM".equals(provider)) {
@@ -173,6 +183,7 @@ public class LLMProvidersConfigurable implements Configurable {
     public boolean isModified() {
         boolean agentUrlModified = !agentPackageUrlField.getText().equals(state.getAgentPackageDownloadUrl());
         boolean modelModified = !modelField.getText().equals(state.getLlmProviderModel());
+        boolean planingModified = !planningModelField.getText().equals(state.getPlanningModel());
 //        var provider = (String) providerComboBox.getSelectedItem();
 //        boolean providerModified = !state.getLlmProvider().equals(provider);
 //        boolean dynamicModified;
@@ -186,13 +197,14 @@ public class LLMProvidersConfigurable implements Configurable {
 //        }
 
 //        return providerModified || agentUrlModified || dynamicModified;
-        return agentUrlModified || modelModified;
+        return agentUrlModified || modelModified || planingModified;
     }
 
     @Override
     public void apply() {
         state.setAgentPackageDownloadUrl(agentPackageUrlField.getText());
         state.setLlmProviderModel(modelField.getText());
+        state.setPlanningModel(planningModelField.getText());
 
 //        var provider = (String) providerComboBox.getSelectedItem();
 //        state.setLlmProvider(provider);
@@ -211,6 +223,7 @@ public class LLMProvidersConfigurable implements Configurable {
     public void reset() {
         agentPackageUrlField.setText(state.getAgentPackageDownloadUrl());
         modelField.setText(state.getLlmProviderModel());
+        planningModelField.setText(state.getPlanningModel());
 //        providerComboBox.setSelectedItem(state.getLlmProvider());
 //        endpointField.setText(state.getLlmProviderUrl());
 //        apiKeyField.setText(state.getLlmProviderApiKey());

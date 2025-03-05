@@ -31,7 +31,7 @@ public final class AgentServerService {
     private final BeanClassValidator beanClassValidator = new BeanClassValidator();
 
     public  <T> T createClient(Class<T> t, String endpoint) {
-        var client = HTTPClient.builder().timeout(Duration.ofSeconds(30)).build();
+        var client = HTTPClient.builder().timeout(Duration.ofSeconds(120)).build();
         var writer = new RequestBeanWriter();
         var reader = new ResponseBeanReader();
         logger.info("create web service client, interface={}, serviceURL={}", t.getCanonicalName(), endpoint);
@@ -74,6 +74,7 @@ public final class AgentServerService {
         request.currentLineNumber = info.position().line();
         request.currentColumnNumber = info.position().column();
         request.model = state == null ? "" : state.getLlmProviderModel();
+        request.planningModel = state == null ? "" : state.getPlanningModel();
         return naixtAgentWebService.chat(request);
     }
 

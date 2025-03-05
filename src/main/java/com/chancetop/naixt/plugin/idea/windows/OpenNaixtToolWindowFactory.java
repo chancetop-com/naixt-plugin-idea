@@ -155,7 +155,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                     scrollBottom();
                 } catch (Exception ex) {
                     conversationPanel.remove(thinkingPanel);
-                    addMessageToConversation(ChatResponse.of("Sorry, an error occurred: " + ex.getMessage()), false, false, false);
+                    addMessageToConversation(ChatResponse.of("Sorry, an error occurred: " + ex.getMessage()), false, false, true);
                     scrollBottom();
                 }
             }

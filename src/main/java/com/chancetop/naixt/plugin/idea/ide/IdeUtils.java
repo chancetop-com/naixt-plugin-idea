@@ -17,7 +17,7 @@ import java.nio.file.Paths;
 public class IdeUtils {
     public static String getCurrentFilePath(Project project) {
         var files = FileEditorManager.getInstance(project).getSelectedFiles();
-        return files.length == 0 ? "" : files[0].getPath();
+        return files.length == 0 || files[0].getPath().equalsIgnoreCase("/diff") ? "" : files[0].getPath();
     }
 
     public static Position getCurrentPosition(Project project) {
