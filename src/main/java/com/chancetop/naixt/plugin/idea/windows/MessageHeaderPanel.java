@@ -3,7 +3,6 @@ package com.chancetop.naixt.plugin.idea.windows;
 import com.chancetop.naixt.agent.api.naixt.ChatResponse;
 import com.intellij.icons.AllIcons;
 import com.intellij.ui.JBColor;
-import com.intellij.util.ui.JBUI;
 
 import javax.swing.*;
 import java.awt.*;

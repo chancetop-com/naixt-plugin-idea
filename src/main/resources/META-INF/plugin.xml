@@ -27,6 +27,13 @@
        Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
   <depends>com.intellij.modules.platform</depends>
 
+  <change-notes><![CDATA[
+    <h2>Version 1.0.5</h2>
+    <ul>
+      <li>Update the changelist UI.</li>
+    </ul>
+  ]]]></change-notes>
+
   <application-components>
     <component>
       <implementation-class>com.chancetop.naixt.plugin.idea.PluginShutdownHandler</implementation-class>
