@@ -47,7 +47,14 @@
                 doNotActivateOnStart="true"
                 anchor="right"
                 secondary="true"
-                icon="com.chancetop.naixt.plugin.idea.icons.NaixtIcons.NaixtToolWindow"/>
+                icon="com.chancetop.naixt.plugin.idea.icons.NaixtIcons.NAIXT_TOOL_WINDOW"/>
+
+    <toolWindow factoryClass="com.chancetop.naixt.plugin.idea.windows.OpenChangelistToolWindowFactory"
+                id="Naixt Changelist"
+                doNotActivateOnStart="true"
+                anchor="left"
+                secondary="true"
+                icon="com.chancetop.naixt.plugin.idea.icons.NaixtIcons.CHANGELIST"/>
 
   </extensions>
 

@@ -78,7 +78,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                 agentServerService.clearShortTermMemory();
             }
         });
-        actionGroup.add(new AnAction("History", "Show history", NaixtIcons.History) {
+        actionGroup.add(new AnAction("History", "Show history", NaixtIcons.HISTORY) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
                 // handle click event

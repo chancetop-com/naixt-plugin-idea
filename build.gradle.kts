@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.chancetop"
-version = "1.0.1"
+version = "1.0.3"
 
 repositories {
   mavenLocal()
@@ -41,7 +41,6 @@ tasks {
 
   patchPluginXml {
     sinceBuild.set("243")
-    untilBuild.set("243.*")
   }
 
   signPlugin {

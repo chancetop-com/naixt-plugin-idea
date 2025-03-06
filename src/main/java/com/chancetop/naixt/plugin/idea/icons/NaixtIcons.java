@@ -12,6 +12,7 @@ public class NaixtIcons {
         return IconLoader.getIcon(path, NaixtIcons.class.getClassLoader());
     }
 
-    public static final Icon NaixtToolWindow = load("/icons/naixt.svg");
-    public static final Icon History = load("/icons/history.svg");
+    public static final Icon NAIXT_TOOL_WINDOW = load("/icons/naixt.svg");
+    public static final Icon HISTORY = load("/icons/history.svg");
+    public static final Icon CHANGELIST = load("/icons/changelist.svg");
 }
