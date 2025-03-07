@@ -18,7 +18,7 @@ public class OpenChangelistToolWindowFactory implements ToolWindowFactory {
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-        var panel = ApprovePanel.createChangelistPanel(project, null, null);
+        var panel = ApprovePanel.createChangelistPanel(project, null, null, null);
         var content = ContentFactory.getInstance().createContent(panel, "", false);
         toolWindow.getContentManager().addContent(content);
     }

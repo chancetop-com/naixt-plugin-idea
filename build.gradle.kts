@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.chancetop"
-version = "1.0.5"
+version = "1.0.6"
 
 repositories {
   mavenLocal()
@@ -54,7 +54,7 @@ tasks {
   }
 }
 
-val coreNgVersion = "9.1.5"
+val coreNgVersion = "9.1.7"
 val agentServiceInterfaceVersion = "1.0.3-SNAPSHOT"
 
 dependencies {

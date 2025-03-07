@@ -28,11 +28,18 @@
   <depends>com.intellij.modules.platform</depends>
 
   <change-notes><![CDATA[
+    <h2>Version 1.0.6</h2>
+    <ul>
+      <li>Support sse chat.</li>
+      <li>Update to CoreNG 9.1.7.</li>
+      <li>Auto hide changelist window when apply or cancel.</li>
+      <li>Update the changelist logo.</li>
+    </ul>
     <h2>Version 1.0.5</h2>
     <ul>
       <li>Update the changelist UI.</li>
     </ul>
-  ]]]></change-notes>
+  ]]></change-notes>
 
   <application-components>
     <component>

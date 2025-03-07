@@ -10,6 +10,7 @@ import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowContentUiType;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.components.JBList;
@@ -38,7 +39,7 @@ public class ApprovePanel {
     public static void showApprovePanel(Project project, ChatResponse msg, Runnable afterApproved) {
         try {
             var window = ToolWindowManager.getInstance(project).getToolWindow("Naixt Changelist");
-            var panel = createChangelistPanel(project, msg, afterApproved);
+            var panel = createChangelistPanel(project, window, msg, afterApproved);
             var content = ContentFactory.getInstance().createContent(panel, "", false);
             content.setDisposer(new DisposeParentOnClose(panel));
 
@@ -66,7 +67,7 @@ public class ApprovePanel {
      * @param afterApproved The runnable to execute after approval.
      * @return A JPanel representing the changelist panel.
      */
-    public static JPanel createChangelistPanel(Project project, ChatResponse msg, Runnable afterApproved) {
+    public static JPanel createChangelistPanel(Project project, ToolWindow window, ChatResponse msg, Runnable afterApproved) {
         var panel = new JPanel(new BorderLayout());
         if (msg == null || msg.fileContents.isEmpty()) msg = ChatResponse.of("No changes found");
 
@@ -90,14 +91,14 @@ public class ApprovePanel {
         });
 
         if (!msg.fileContents.isEmpty()) {
-            var buttonPanel = createButtonPanel(afterApproved, fileListModel, panel);
+            var buttonPanel = createButtonPanel(window, afterApproved, fileListModel, panel);
             panel.add(buttonPanel, BorderLayout.SOUTH);
         }
         panel.add(new JBScrollPane(fileList), BorderLayout.CENTER);
         return panel;
     }
 
-    private static JPanel createButtonPanel(Runnable afterApproved, DefaultListModel<FileChangeItem> fileListModel, JPanel panel) {
+    private static JPanel createButtonPanel(ToolWindow window, Runnable afterApproved, DefaultListModel<FileChangeItem> fileListModel, JPanel panel) {
         var buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         var apply = new JButton("Apply Changes");
         var cancel = new JButton("Cancel");
@@ -107,12 +108,14 @@ public class ApprovePanel {
             panel.remove(buttonPanel);
             panel.revalidate();
             panel.repaint();
+            window.hide();
         });
         cancel.addActionListener(l -> {
             fileListModel.clear();
             panel.remove(buttonPanel);
             panel.revalidate();
             panel.repaint();
+            window.hide();
         });
         buttonPanel.add(apply);
         buttonPanel.add(cancel);

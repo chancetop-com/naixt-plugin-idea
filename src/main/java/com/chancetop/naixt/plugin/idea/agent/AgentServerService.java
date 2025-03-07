@@ -10,15 +10,19 @@ import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import core.framework.http.HTTPClient;
+import core.framework.http.HTTPMethod;
+import core.framework.http.HTTPRequest;
 import core.framework.internal.bean.BeanClassValidator;
 import core.framework.internal.web.bean.RequestBeanWriter;
 import core.framework.internal.web.bean.ResponseBeanReader;
 import core.framework.internal.web.service.WebServiceClient;
 import core.framework.internal.web.service.WebServiceClientBuilder;
 import core.framework.internal.web.service.WebServiceInterfaceValidator;
+import core.framework.json.JSON;
 import org.slf4j.Logger;
 
 import java.time.Duration;
+import java.util.function.Consumer;
 
 /**
  * @author stephen
@@ -26,15 +30,16 @@ import java.time.Duration;
 @Service
 public final class AgentServerService {
     private final Logger logger = org.slf4j.LoggerFactory.getLogger(AgentServerService.class);
+    private final String endpoint = "http://localhost:59527";
     private final NaixtWebService naixtWebService;
     private final NaixtAgentWebService naixtAgentWebService;
     private final BeanClassValidator beanClassValidator = new BeanClassValidator();
+    private final HTTPClient client = HTTPClient.builder().timeout(Duration.ofSeconds(120)).build();
 
     public  <T> T createClient(Class<T> t, String endpoint) {
-        var client = HTTPClient.builder().timeout(Duration.ofSeconds(120)).build();
+        logger.info("create web service client, interface={}, serviceURL={}", t.getCanonicalName(), endpoint);
         var writer = new RequestBeanWriter();
         var reader = new ResponseBeanReader();
-        logger.info("create web service client, interface={}, serviceURL={}", t.getCanonicalName(), endpoint);
         var validator = new WebServiceInterfaceValidator(t, beanClassValidator);
         validator.requestBeanWriter = writer;
         validator.responseBeanReader = reader;
@@ -43,7 +48,6 @@ public final class AgentServerService {
     }
 
     public AgentServerService() {
-        var endpoint = "http://localhost:59527";
         // caution: this is a very tricky way to set the class loader, it should be used with caution
         // set the thread context class loader for the java assist library to load the class from the plugin classpath but the system classpath
         var systemClassLoader = Thread.currentThread().getContextClassLoader();
@@ -74,6 +78,30 @@ public final class AgentServerService {
     }
 
     public ChatResponse send(String text, IdeCurrentInfo info) {
+        return naixtAgentWebService.chat(buildChatRequest(text, info));
+    }
+
+    public void sendSse(String text, IdeCurrentInfo info, Consumer<ChatResponse> consumer) {
+        var request = new HTTPRequest(HTTPMethod.PUT, endpoint + "/naixt/agent/chat-sse");
+        request.body = JSON.toJSON(buildChatRequest(text, info)).getBytes();
+        try (var response = client.sse(request)) {
+            for (var event : response) {
+                var chatResponse = JSON.fromJSON(ChatResponse.class, event.data());
+                consumer.accept(chatResponse);
+                if (!chatResponse.fileContents.isEmpty()) {
+                    response.close();
+                }
+            }
+        } catch (Exception e) {
+            if (e instanceof IllegalStateException && e.getMessage().contains("closed")) {
+                return;
+            }
+            logger.error("SSE request failed", e);
+            consumer.accept(ChatResponse.of("Error: " + e.getMessage()));
+        }
+    }
+
+    private NaixtChatRequest buildChatRequest(String text, IdeCurrentInfo info) {
         var state = NaixtSettingStateService.getInstance().getState();
         var request = new NaixtChatRequest();
         request.query = text;
@@ -83,7 +111,7 @@ public final class AgentServerService {
         request.currentColumnNumber = info.position().column();
         request.model = state == null ? "" : state.getLlmProviderModel();
         request.planningModel = state == null ? "" : state.getPlanningModel();
-        return naixtAgentWebService.chat(request);
+        return request;
     }
 
     public void approve(ChatResponse msg, String workspacePath) {

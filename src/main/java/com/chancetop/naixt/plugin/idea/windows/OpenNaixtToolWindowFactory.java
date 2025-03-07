@@ -23,7 +23,10 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author stephen
@@ -141,30 +144,40 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         scrollBottom();
 
         var info = IdeUtils.getInfo(project);
-        new SwingWorker<ChatResponse, Void>() {
-            @Override
-            protected ChatResponse doInBackground() throws Exception {
-                try {
-                    return agentServerService.send(text, info);
-                } catch (Exception e) {
-                    Messages.showMessageDialog(project, "Failed to send message to agent", "Warning", Messages.getWarningIcon());
-                }
-                return ChatResponse.of("Sorry, an error occurred");
+        var isFirstResponse = new AtomicBoolean(true);
+
+        CompletableFuture.runAsync(() -> agentServerService.sendSse(text, info, response -> SwingUtilities.invokeLater(() -> {
+            if (isFirstResponse.getAndSet(false)) {
+                conversationPanel.remove(thinkingPanel);
+                addMessageToConversation(response, false, ChatUtils.hasAction(response), true);
+            } else {
+                updateLastMessage(response);
             }
-            @Override
-            protected void done() {
-                try {
-                    var rsp = get();
-                    conversationPanel.remove(thinkingPanel);
-                    addMessageToConversation(rsp, false, ChatUtils.hasAction(rsp), true);
-                    scrollBottom();
-                } catch (Exception ex) {
-                    conversationPanel.remove(thinkingPanel);
-                    addMessageToConversation(ChatResponse.of("Sorry, an error occurred: " + ex.getMessage()), false, false, true);
-                    scrollBottom();
-                }
+            scrollBottom();
+        })));
+    }
+
+    private void updateLastMessage(ChatResponse response) {
+        var components = conversationPanel.getComponents();
+        if (components.length == 0) return;
+
+        var lastComponent = components[components.length - 1];
+        if (lastComponent instanceof JPanel messagePanel) {
+            Arrays.stream(messagePanel.getComponents())
+                    .filter(v -> "MessageTextArea".equals(v.getName()))
+                    .findFirst()
+                    .ifPresent(textArea -> ((JTextArea) textArea).setText(ChatUtils.buildContent(((JTextArea) textArea).getText(), response)));
+            if (ChatUtils.hasAction(response)) {
+                Arrays.stream(messagePanel.getComponents())
+                        .filter(v -> "ApproveButtonPanel".equals(v.getName()))
+                        .findFirst()
+                        .ifPresent(panel -> {
+                            ((JPanel) panel).add(createApproveButton(response));
+                            panel.revalidate();
+                            panel.repaint();
+                        });
             }
-        }.execute();
+        }
     }
 
     private JPanel addThinkingIndicator() {
@@ -187,7 +200,8 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         });
         messagePanel.add(header, BorderLayout.NORTH);
 
-        var textArea = new JTextArea(message.text);
+        var textArea = new JTextArea(showRegenerate ? message.text + "\n" + ChatUtils.STILL_THINKING : message.text);
+        textArea.setName("MessageTextArea");
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setEditable(false);
@@ -195,19 +209,28 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         messagePanel.add(textArea, BorderLayout.CENTER);
 
         if (!isUser) {
-            var buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-            if (showApprove) {
-                var approveButton = new JButton("Need Your Approve!");
-                approveButton.addActionListener(e -> handleApprove(approveButton, e, message));
-                buttonPanel.add(approveButton);
-            }
-            messagePanel.add(buttonPanel, BorderLayout.SOUTH);
+            messagePanel.add(createApproveButtonPanel(showApprove, message), BorderLayout.SOUTH);
         }
 
         conversationPanel.add(messagePanel);
         conversationPanel.validate();
         conversationPanel.paintImmediately(conversationPanel.getBounds());
         scrollBottom();
+    }
+
+    private JPanel createApproveButtonPanel(Boolean showApprove, ChatResponse message) {
+        var panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        panel.setName("ApproveButtonPanel");
+        if (showApprove) {
+            panel.add(createApproveButton(message));
+        }
+        return panel;
+    }
+
+    private JButton createApproveButton(ChatResponse message) {
+        var approveButton = new JButton("Need Your Approve!");
+        approveButton.addActionListener(e -> handleApprove(approveButton, e, message));
+        return approveButton;
     }
 
     private void scrollBottom() {
