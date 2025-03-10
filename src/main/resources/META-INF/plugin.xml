@@ -17,13 +17,13 @@
     The Naixt coding agent.<br>
     How to use it:<br>
     1. Open the Naixt tool window.<br>
-    2. Setting the env of SYS_LLM_ENDPOINT and SYS_LLM_APIKEY
+    2. Setting the env of SYS_LLM_ENDPOINT and SYS_LLM_APIKEY.<br>
     3. Option A: Click the "Settings" button to configure the Naixt coding agent, especially the server package section.<br>
     3. Option B: Run Naixt coding agent server locally by yourself.<br>
     4. Click the "Start" button to start the Naixt coding agent. If you run the Naixt coding agent server by yourself skip this step.<br>
     5. Chat with the Naixt coding agent in the Naixt tool window.<br>
-
-    If you cannot download the agent package automatically, please download by hand from here https://github.com/chancetop-com/naixt-agent and put it in the idea's plugins dir /path/to/the/idea's plugins/naixt/agent-service.tar
+    6. Notes:<br>
+    If you cannot download the agent package automatically, please download by hand from here https://github.com/chancetop-com/naixt-agent and put it in the idea's plugins dir. /path/to/the/idea's plugins/naixt/agent-service.tar
   ]]></description>
 
   <!-- Product and plugin compatibility requirements.
@@ -31,6 +31,10 @@
   <depends>com.intellij.modules.platform</depends>
 
   <change-notes><![CDATA[
+    <h2>Version 1.0.8</h2>
+    <ul>
+      <li>Separate the tool window of different idea instance, and keep the agent-service single instance.</li>
+    </ul>
     <h2>Version 1.0.7</h2>
     <ul>
       <li>Optimize the server package download and startup.</li>
