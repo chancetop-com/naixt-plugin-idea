@@ -7,9 +7,9 @@ public class NaixtSettingState {
     private String llmProvider = "";
     private String llmProviderUrl = "";
     private String llmProviderApiKey = "";
-    private String llmProviderModel = "";
-    private String planningModel = "";
-    private String agentPackageDownloadUrl = "";
+    private String llmProviderModel = "o1-mini";
+    private String planningModel = "o1-mini";
+    private String agentPackageDownloadUrl = "https://github.com/chancetop-com/naixt-agent/releases/download/1.0.3/agent-service.tar";
 
     public String getLlmProvider() {
         return llmProvider;

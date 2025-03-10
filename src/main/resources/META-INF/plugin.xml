@@ -31,9 +31,13 @@
   <depends>com.intellij.modules.platform</depends>
 
   <change-notes><![CDATA[
+    <h2>Version 1.0.10</h2>
+    <ul>
+      <li>Add default configurations.</li>
+    </ul>
     <h2>Version 1.0.9</h2>
     <ul>
-      <li>Use the input text field's event to handle the enter key press</li>
+      <li>Use the input text field's event to handle the enter key press.</li>
     </ul>
     <h2>Version 1.0.8</h2>
     <ul>
