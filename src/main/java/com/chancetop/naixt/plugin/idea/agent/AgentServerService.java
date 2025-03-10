@@ -34,7 +34,7 @@ public final class AgentServerService {
     private final NaixtWebService naixtWebService;
     private final NaixtAgentWebService naixtAgentWebService;
     private final BeanClassValidator beanClassValidator = new BeanClassValidator();
-    private final HTTPClient client = HTTPClient.builder().timeout(Duration.ofSeconds(120)).build();
+    private final HTTPClient client = HTTPClient.builder().connectTimeout(Duration.ofMillis(100)).timeout(Duration.ofSeconds(120)).build();
 
     public  <T> T createClient(Class<T> t, String endpoint) {
         logger.info("create web service client, interface={}, serviceURL={}", t.getCanonicalName(), endpoint);
