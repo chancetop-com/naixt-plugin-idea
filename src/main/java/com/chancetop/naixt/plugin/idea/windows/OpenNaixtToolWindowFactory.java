@@ -165,6 +165,9 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
             responseToConversation(context, text);
         });
 
+        // Add ActionListener to inputTextField to handle Enter key press
+        inputTextField.addActionListener(l -> sendButton.doClick());
+
         inputPanel.add(inputTextField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
         context.mainPanel().getRootPane().setDefaultButton(sendButton);
