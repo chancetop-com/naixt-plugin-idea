@@ -19,18 +19,16 @@ public final class AgentServiceManagementService {
         return ApplicationManager.getApplication().getService(AgentServiceManagementService.class);
     }
 
-    public void start(String url, Project project) {
+    public AgentStartResult start(String url) {
         if (isRunning) {
-            Messages.showMessageDialog(project, "Agent server is running already", "Warning", Messages.getWarningIcon());
-            return;
+            return new AgentStartResult(true, true, "Agent server is running already");
         }
         try {
             process = AgentServiceStarter.start(url);
             isRunning = true;
-            Messages.showMessageDialog(project, "Start agent server success!", "Success", Messages.getInformationIcon());
+            return new AgentStartResult(true, false, "Start agent server success!");
         } catch (Exception e) {
-            Messages.showMessageDialog(project, "Start agent server failed!" + e.getMessage(), "Warning", Messages.getErrorIcon());
-            throw new RuntimeException("Failed to start service", e);
+            return new AgentStartResult(false, false, "Start agent server failed!" + e.getMessage());
         }
     }
 

@@ -6,7 +6,9 @@ import com.chancetop.naixt.plugin.idea.agent.ChatUtils;
 import com.chancetop.naixt.plugin.idea.icons.NaixtIcons;
 import com.chancetop.naixt.plugin.idea.ide.IdeUtils;
 import com.chancetop.naixt.plugin.idea.server.AgentServiceManagementService;
+import com.chancetop.naixt.plugin.idea.server.AgentStartResult;
 import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
+import com.chancetop.naixt.plugin.idea.windows.inernal.WindowsUtils;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.options.ShowSettingsUtil;
@@ -60,6 +62,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     }
 
     private void sendWelcomeMessage() {
+        conversationPanel.removeAll();
         addMessageToConversation(ChatResponse.of(MessageHeaderPanel.HELLO_MESSAGE), false, false, false);
     }
 
@@ -102,7 +105,31 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                     Messages.showMessageDialog(project, "Please set the agent package download url in settings!", "Warning", Messages.getWarningIcon());
                     return;
                 }
-                agentServiceManagementService.start(agentServicePackageUrl, project);
+                Messages.showMessageDialog(project, "If it's the first time you start the server, plugin need to download the agent package, please wait a moment!", "Info", Messages.getInformationIcon());
+
+                new SwingWorker<AgentStartResult, Void>() {
+                    @Override
+                    protected AgentStartResult doInBackground() throws Exception {
+                        return agentServiceManagementService.start(agentServicePackageUrl);
+                    }
+                    @Override
+                    protected void done() {
+                        try {
+                            var result = get();
+                            if (!result.success()) {
+                                Messages.showMessageDialog(project, result.message(), "Error", Messages.getErrorIcon());
+                                return;
+                            }
+                            if (result.warning()) {
+                                Messages.showMessageDialog(project, result.message(), "Warning", Messages.getWarningIcon());
+                                return;
+                            }
+                            Messages.showMessageDialog(project, result.message(), "Info", Messages.getInformationIcon());
+                        } catch (Exception e) {
+                            Messages.showMessageDialog(project, "Failed to start agent server, please check the log for more information\n" + e.getMessage(), "Warning", Messages.getErrorIcon());
+                        }
+                    }
+                }.execute();
             }
         });
         actionGroup.add(new AnAction("Stop Agent Server", "Stop agent server", AllIcons.Actions.Suspend) {
@@ -141,7 +168,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
 
     private void responseToConversation(String text) {
         var thinkingPanel = addThinkingIndicator();
-        scrollBottom();
+        WindowsUtils.scrollBottom(conversationPanel, conversationScrollPane);
 
         var info = IdeUtils.getInfo(project);
         var isFirstResponse = new AtomicBoolean(true);
@@ -153,7 +180,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
             } else {
                 updateLastMessage(response);
             }
-            scrollBottom();
+            WindowsUtils.scrollBottom(conversationPanel, conversationScrollPane);
         })));
     }
 
@@ -183,7 +210,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     private JPanel addThinkingIndicator() {
         var thinkingPanel = ThinkingIndicator.createThinkingIndicator();
         conversationPanel.add(thinkingPanel);
-        scrollBottom();
+        WindowsUtils.scrollBottom(conversationPanel, conversationScrollPane);
         return thinkingPanel;
     }
 
@@ -215,7 +242,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         conversationPanel.add(messagePanel);
         conversationPanel.validate();
         conversationPanel.paintImmediately(conversationPanel.getBounds());
-        scrollBottom();
+        WindowsUtils.scrollBottom(conversationPanel, conversationScrollPane);
     }
 
     private JPanel createApproveButtonPanel(Boolean showApprove, ChatResponse message) {
@@ -231,29 +258,6 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         var approveButton = new JButton("Need Your Approve!");
         approveButton.addActionListener(e -> handleApprove(approveButton, e, message));
         return approveButton;
-    }
-
-    private void scrollBottom() {
-        SwingUtilities.invokeLater(() -> {
-            conversationPanel.validate();
-            conversationPanel.paintImmediately(conversationPanel.getBounds());
-            conversationScrollPane.validate();
-            conversationScrollPane.paintImmediately(conversationScrollPane.getBounds());
-
-            var components = conversationPanel.getComponents();
-            if (components.length > 0) {
-                Rectangle lastRect = components[components.length - 1].getBounds();
-                conversationPanel.scrollRectToVisible(new Rectangle(
-                        0,
-                        lastRect.y + lastRect.height + 10,
-                        1,
-                        1
-                ));
-            }
-
-            var vertical = conversationScrollPane.getVerticalScrollBar();
-            vertical.setValue(vertical.getMaximum());
-        });
     }
 
     private void repaintConversationPanel() {

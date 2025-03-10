@@ -22,6 +22,11 @@ public class AgentServiceStarter {
     private static final Logger LOGGER = LoggerFactory.getLogger(AgentServiceStarter.class);
 
     public static Process start(String url) throws IOException, URISyntaxException {
+        var apikey = System.getenv("SYS_LLM_APIKEY");
+        var endpoint = System.getenv("SYS_LLM_ENDPOINT");
+        if (apikey == null || endpoint == null) {
+            throw new IllegalArgumentException("Environment variables SYS_LLM_APIKEY and SYS_LLM_ENDPOINT must be set");
+        }
         var dir = getPluginDir();
         if (agentServicePackageNotExists(dir)) {
             ensureDirectoryExists(dir);
@@ -53,7 +58,7 @@ public class AgentServiceStarter {
         var parentDir = Paths.get(dir).getParent().toAbsolutePath();
         var tmp = new File(parentDir.toString(), "agent-service.tar");
         if (urlStr.startsWith("/") || urlStr.matches("[A-Za-z]:.*")) {
-            File sourceFile = new File(urlStr);
+            var sourceFile = new File(urlStr);
             if (!sourceFile.exists()) {
                 throw new FileNotFoundException("Local file not found: " + urlStr);
             }
@@ -172,10 +177,6 @@ public class AgentServiceStarter {
         pb.directory(binDir);
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-
-        var env = pb.environment();
-        env.put("SYS_LLM_APIKEY", System.getenv("SYS_LLM_APIKEY"));
-        env.put("SYS_LLM_ENDPOINT", System.getenv("SYS_LLM_ENDPOINT"));
         return pb.start();
     }
 }
