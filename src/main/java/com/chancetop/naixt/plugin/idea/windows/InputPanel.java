@@ -104,6 +104,7 @@ public class InputPanel {
                 dialog.dispose();
             }
         });
+        sendButton.addActionListener(l -> dialog.dispose());
 
         panel.add(inputScrollPane, BorderLayout.CENTER);
         panel.add(buttonPanel, BorderLayout.SOUTH);
@@ -113,7 +114,7 @@ public class InputPanel {
     }
 
     private static JButton createMaximizeButton(NaixtToolWindowContext context, TextAreaCallback callback) {
-        JButton button = new JButton();
+        var button = new JButton();
         button.setIcon(AllIcons.Windows.Maximize); // Updated icon
         button.setBorderPainted(false);
         button.setFocusable(false);
@@ -124,7 +125,7 @@ public class InputPanel {
     }
 
     private static JButton createAddButton(NaixtToolWindowContext context) {
-        JButton button = new JButton();
+        var button = new JButton();
         button.setIcon(AllIcons.General.Add);
         button.setBorderPainted(false);
         button.setFocusable(false);
@@ -137,7 +138,7 @@ public class InputPanel {
     }
 
     public static @NotNull JButton createSendButton(JTextArea inputTextArea, TextAreaCallback callback) {
-        JButton sendButton = new JButton("Send");
+        var sendButton = new JButton("Send");
         sendButton.setFocusable(false);
         sendButton.setPreferredSize(new Dimension(JBUI.scale(80), JBUI.scale(30)));
         sendButton.setFont(UIManager.getFont("Button.font"));

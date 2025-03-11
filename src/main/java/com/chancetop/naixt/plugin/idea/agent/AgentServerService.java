@@ -81,13 +81,13 @@ public final class AgentServerService {
         return naixtAgentWebService.chat(buildChatRequest(text, info));
     }
 
-    public void chatSse(String text, IdeCurrentInfo info, Consumer<ChatResponse> consumer) {
+    public void chatSse(String text, IdeCurrentInfo info, Consumer<ChatResult> consumer) {
         var request = new HTTPRequest(HTTPMethod.PUT, endpoint + "/naixt/agent/chat-sse");
         request.body = JSON.toJSON(buildChatRequest(text, info)).getBytes();
         try (var response = client.sse(request)) {
             for (var event : response) {
                 var chatResponse = JSON.fromJSON(ChatResponse.class, event.data());
-                consumer.accept(chatResponse);
+                consumer.accept(new ChatResult(true, chatResponse));
                 if (!chatResponse.fileContents.isEmpty()) {
                     response.close();
                 }
@@ -97,7 +97,7 @@ public final class AgentServerService {
                 return;
             }
             logger.error("SSE request failed", e);
-            consumer.accept(ChatResponse.of("Error: " + e.getMessage()));
+            consumer.accept(new ChatResult(false, ChatResponse.of("Chat to Agent failed, please make sure you started the Agent Server, Error: " + e.getMessage())));
         }
     }
 

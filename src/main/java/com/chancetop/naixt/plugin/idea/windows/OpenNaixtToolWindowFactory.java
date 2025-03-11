@@ -2,6 +2,7 @@ package com.chancetop.naixt.plugin.idea.windows;
 
 import com.chancetop.naixt.plugin.idea.agent.AgentServerService;
 import com.chancetop.naixt.agent.api.naixt.ChatResponse;
+import com.chancetop.naixt.plugin.idea.agent.ChatResult;
 import com.chancetop.naixt.plugin.idea.agent.ChatUtils;
 import com.chancetop.naixt.plugin.idea.icons.NaixtIcons;
 import com.chancetop.naixt.plugin.idea.ide.IdeUtils;
@@ -61,7 +62,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
 
     private void sendWelcomeMessage(NaixtToolWindowContext context) {
         context.conversationPanel().removeAll();
-        addMessageToConversation(context, ChatResponse.of(MessageHeaderPanel.HELLO_MESSAGE), false, false, false);
+        addMessageToConversation(context, new ChatResult(true, ChatResponse.of(MessageHeaderPanel.HELLO_MESSAGE)), false, false, false);
     }
 
     private @NotNull JPanel createHeaderPanel(NaixtToolWindowContext context) {
@@ -176,7 +177,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                 return;
             }
             MessageHeaderPanel.clearLastMessageRegenerateButton(context.conversationPanel());
-            addMessageToConversation(context, ChatResponse.of(text), true, false, false);
+            addMessageToConversation(context, new ChatResult(true, ChatResponse.of(text)), true, false, false);
             textArea.setText("");
 
             responseToConversation(context, text);
@@ -190,12 +191,12 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         var info = IdeUtils.getInfo(context.project());
         var isFirstResponse = new AtomicBoolean(true);
 
-        CompletableFuture.runAsync(() -> agentServerService.chatSse(text, info, response -> SwingUtilities.invokeLater(() -> {
+        CompletableFuture.runAsync(() -> agentServerService.chatSse(text, info, result -> SwingUtilities.invokeLater(() -> {
             if (isFirstResponse.getAndSet(false)) {
                 context.conversationPanel().remove(thinkingIndicatorPanel);
-                addMessageToConversation(context, response, false, ChatUtils.hasAction(response), true);
+                addMessageToConversation(context, result, false, ChatUtils.hasAction(result.response()), true);
             } else {
-                updateLastMessage(context, response);
+                updateLastMessage(context, result.response());
             }
             WindowsUtils.scrollBottom(context.conversationPanel(), context.conversationScrollPane());
         })));
@@ -224,20 +225,20 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         }
     }
 
-    private void addMessageToConversation(NaixtToolWindowContext context, ChatResponse message, boolean isUser, boolean showApprove, boolean showRegenerate) {
+    private void addMessageToConversation(NaixtToolWindowContext context, ChatResult result, boolean isUser, boolean showApprove, boolean showRegenerate) {
         var messagePanel = new JPanel(new BorderLayout());
         messagePanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, isUser ? JBColor.LIGHT_GRAY : JBColor.DARK_GRAY),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
 
-        var header = MessageHeaderPanel.createMessageHeaderPanel(message, isUser, showRegenerate, () -> {
+        var header = MessageHeaderPanel.createMessageHeaderPanel(result.response(), isUser, showRegenerate, () -> {
             context.conversationPanel().remove(messagePanel);
             responseToConversation(context, "Think and regenerate the response");
         });
         messagePanel.add(header, BorderLayout.NORTH);
 
-        var textArea = new JTextArea(showRegenerate ? message.text + ChatUtils.STILL_THINKING : message.text);
+        var textArea = new JTextArea(showRegenerate && result.success() ? result.response().text + ChatUtils.STILL_THINKING : result.response().text);
         textArea.setName("MessageTextArea");
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
@@ -246,7 +247,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         messagePanel.add(textArea, BorderLayout.CENTER);
 
         if (!isUser) {
-            messagePanel.add(createApproveButtonPanel(context, showApprove, message), BorderLayout.SOUTH);
+            messagePanel.add(createApproveButtonPanel(context, showApprove, result.response()), BorderLayout.SOUTH);
         }
 
         context.conversationPanel().add(messagePanel);

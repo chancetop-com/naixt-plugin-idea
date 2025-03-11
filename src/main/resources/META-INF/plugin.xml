@@ -31,6 +31,11 @@
   <depends>com.intellij.modules.platform</depends>
 
   <change-notes><![CDATA[
+    <h2>Version 1.0.12</h2>
+    <ul>
+      <li>Optimize the error when sse failed.</li>
+      <li>Optimize maximized dialog send click event.</li>
+    </ul>
     <h2>Version 1.0.11</h2>
     <ul>
       <li>Enhance the input.</li>
