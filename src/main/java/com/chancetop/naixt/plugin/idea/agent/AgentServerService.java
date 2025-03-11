@@ -34,7 +34,7 @@ public final class AgentServerService {
     private final NaixtWebService naixtWebService;
     private final NaixtAgentWebService naixtAgentWebService;
     private final BeanClassValidator beanClassValidator = new BeanClassValidator();
-    private final HTTPClient client = HTTPClient.builder().connectTimeout(Duration.ofMillis(100)).timeout(Duration.ofSeconds(120)).build();
+    private final HTTPClient client = HTTPClient.builder().connectTimeout(Duration.ofMillis(100)).timeout(Duration.ofSeconds(180)).build();
 
     public  <T> T createClient(Class<T> t, String endpoint) {
         logger.info("create web service client, interface={}, serviceURL={}", t.getCanonicalName(), endpoint);
@@ -77,11 +77,11 @@ public final class AgentServerService {
         }
     }
 
-    public ChatResponse send(String text, IdeCurrentInfo info) {
+    public ChatResponse chat(String text, IdeCurrentInfo info) {
         return naixtAgentWebService.chat(buildChatRequest(text, info));
     }
 
-    public void sendSse(String text, IdeCurrentInfo info, Consumer<ChatResponse> consumer) {
+    public void chatSse(String text, IdeCurrentInfo info, Consumer<ChatResponse> consumer) {
         var request = new HTTPRequest(HTTPMethod.PUT, endpoint + "/naixt/agent/chat-sse");
         request.body = JSON.toJSON(buildChatRequest(text, info)).getBytes();
         try (var response = client.sse(request)) {

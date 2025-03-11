@@ -1,6 +1,8 @@
 package com.chancetop.naixt.plugin.idea.windows;
 
+import com.chancetop.naixt.plugin.idea.windows.inernal.WindowsUtils;
 import com.intellij.ui.JBColor;
+import com.intellij.ui.components.JBScrollPane;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,6 +11,14 @@ import java.awt.*;
  * @author stephen
  */
 public class ThinkingIndicator {
+
+    public static JPanel addThinkingIndicator(JPanel conversationPanel, JBScrollPane conversationScrollPane) {
+        var thinkingPanel = createThinkingIndicator();
+        conversationPanel.add(thinkingPanel);
+        WindowsUtils.scrollBottom(conversationPanel, conversationScrollPane);
+        return thinkingPanel;
+    }
+
     public static JPanel createThinkingIndicator() {
         var thinkingPanel = new JPanel(new BorderLayout());
         thinkingPanel.setBorder(BorderFactory.createCompoundBorder(

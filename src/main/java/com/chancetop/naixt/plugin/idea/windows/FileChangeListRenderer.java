@@ -57,8 +57,8 @@ public class FileChangeListRenderer implements ListCellRenderer<FileChangeItem> 
     private Color getActionColor(com.chancetop.naixt.agent.api.naixt.Action action) {
         return switch (action) {
             case ADD -> JBColor.GREEN;
-            case MODIFY -> JBColor.BLUE;
             case DELETE -> JBColor.LIGHT_GRAY;
+            default -> JBColor.BLUE;
         };
     }
 

@@ -9,6 +9,7 @@ import com.chancetop.naixt.plugin.idea.server.AgentServiceManagementService;
 import com.chancetop.naixt.plugin.idea.server.AgentStartResult;
 import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
 import com.chancetop.naixt.plugin.idea.windows.inernal.NaixtToolWindowContext;
+import com.chancetop.naixt.plugin.idea.windows.inernal.TextAreaCallback;
 import com.chancetop.naixt.plugin.idea.windows.inernal.WindowsUtils;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.*;
@@ -53,7 +54,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
 
         mainPanel.add(createHeaderPanel(context), BorderLayout.NORTH);
         mainPanel.add(conversationScrollPane, BorderLayout.CENTER);
-        mainPanel.add(createInputPanel(context), BorderLayout.SOUTH);
+        mainPanel.add(InputPanel.createBottomInputAreaAndButtonsPanel(context, textCallback(context)), BorderLayout.SOUTH);
 
         sendWelcomeMessage(context);
     }
@@ -70,31 +71,40 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         headerPanel.add(nameLabel, BorderLayout.WEST);
 
         var actionGroup = new DefaultActionGroup();
-        actionGroup.add(new AnAction("New", "New conversation", AllIcons.General.Add) {
+        actionGroup.addSeparator();
+        actionGroup.add(newConversationAction(context));
+        actionGroup.add(historyAction(context));
+        actionGroup.add(settingAction(context));
+        actionGroup.add(startAgentServerAction(context));
+        actionGroup.add(stopAgentServerAction(context));
+
+        var toolbar = ActionManager.getInstance().createActionToolbar("CustomToolBar", actionGroup, true);
+        toolbar.setTargetComponent(headerPanel);
+
+        headerPanel.add(toolbar.getComponent(), BorderLayout.EAST);
+        return headerPanel;
+    }
+
+    private @NotNull AnAction stopAgentServerAction(NaixtToolWindowContext context) {
+        return new AnAction("Stop Agent Server", "Stop agent server", AllIcons.Actions.Suspend) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
-                // handle new event
-                // for now, clear all
-                context.conversationPanel().removeAll();
-                sendWelcomeMessage(context);
-                repaintConversationPanel(context.conversationPanel());
-                agentServerService.clearShortTermMemory();
+                agentServiceManagementService.stop(context.project());
             }
-        });
-        actionGroup.add(new AnAction("History", "Show history", NaixtIcons.HISTORY) {
-            @Override
-            public void actionPerformed(@NotNull AnActionEvent e) {
-                // handle click event
-            }
-        });
-        actionGroup.add(new AnAction("Settings", "Open settings", AllIcons.Actions.More) {
+        };
+    }
+
+    private @NotNull AnAction settingAction(NaixtToolWindowContext context) {
+        return new AnAction("Settings", "Open settings", AllIcons.Actions.More) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
                 ShowSettingsUtil.getInstance().showSettingsDialog(context.project(), "Naixt Settings");
             }
-        });
-        actionGroup.addSeparator();
-        actionGroup.add(new AnAction("Start Agent Server", "Start agent server", AllIcons.Actions.Run_anything) {
+        };
+    }
+
+    private @NotNull AnAction startAgentServerAction(NaixtToolWindowContext context) {
+        return new AnAction("Start Agent Server", "Start agent server", AllIcons.Actions.Run_anything) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
                 var agentServicePackageUrl = Objects.requireNonNull(naixtSettingStateService.getState()).getAgentPackageDownloadUrl();
@@ -120,19 +130,30 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                     }
                 }.execute();
             }
-        });
-        actionGroup.add(new AnAction("Stop Agent Server", "Stop agent server", AllIcons.Actions.Suspend) {
+        };
+    }
+
+    private @NotNull AnAction historyAction(NaixtToolWindowContext context) {
+        return new AnAction("History", "Show history", NaixtIcons.HISTORY) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
-                agentServiceManagementService.stop(context.project());
+                Messages.showMessageDialog(context.project(), "Not implemented yet", "Info", Messages.getInformationIcon());
             }
-        });
+        };
+    }
 
-        var toolbar = ActionManager.getInstance().createActionToolbar("CustomToolBar", actionGroup, true);
-        toolbar.setTargetComponent(headerPanel);
-
-        headerPanel.add(toolbar.getComponent(), BorderLayout.EAST);
-        return headerPanel;
+    private @NotNull AnAction newConversationAction(NaixtToolWindowContext context) {
+        return new AnAction("New", "New conversation", AllIcons.General.Add) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                // handle new event
+                // for now, clear all
+                context.conversationPanel().removeAll();
+                sendWelcomeMessage(context);
+                repaintConversationPanel(context.conversationPanel());
+                agentServerService.clearShortTermMemory();
+            }
+        };
     }
 
     private void afterStartAgentServer(NaixtToolWindowContext context, AgentStartResult result) {
@@ -147,43 +168,31 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         Messages.showMessageDialog(context.project(), result.message(), "Info", Messages.getInformationIcon());
     }
 
-    private @NotNull JPanel createInputPanel(NaixtToolWindowContext context) {
-        var inputPanel = new JPanel(new BorderLayout());
-        var inputTextField = new JTextField();
-        var sendButton = new JButton("Send");
-        sendButton.setName("sendButton");
-        sendButton.addActionListener(l -> {
-            var text = inputTextField.getText();
+    private TextAreaCallback textCallback(NaixtToolWindowContext context) {
+        return textArea -> {
+            var text = textArea.getText();
             if (text.isEmpty()) {
                 Messages.showMessageDialog(context.project(), "Empty input!", "Warning", Messages.getWarningIcon());
                 return;
             }
             MessageHeaderPanel.clearLastMessageRegenerateButton(context.conversationPanel());
             addMessageToConversation(context, ChatResponse.of(text), true, false, false);
-            inputTextField.setText("");
+            textArea.setText("");
 
             responseToConversation(context, text);
-        });
-
-        // Add ActionListener to inputTextField to handle Enter key press
-        inputTextField.addActionListener(l -> sendButton.doClick());
-
-        inputPanel.add(inputTextField, BorderLayout.CENTER);
-        inputPanel.add(sendButton, BorderLayout.EAST);
-        context.mainPanel().getRootPane().setDefaultButton(sendButton);
-        return inputPanel;
+        };
     }
 
     private void responseToConversation(NaixtToolWindowContext context, String text) {
-        var thinkingPanel = addThinkingIndicator(context.conversationPanel(), context.conversationScrollPane());
+        var thinkingIndicatorPanel = ThinkingIndicator.addThinkingIndicator(context.conversationPanel(), context.conversationScrollPane());
         WindowsUtils.scrollBottom(context.conversationPanel(), context.conversationScrollPane());
 
         var info = IdeUtils.getInfo(context.project());
         var isFirstResponse = new AtomicBoolean(true);
 
-        CompletableFuture.runAsync(() -> agentServerService.sendSse(text, info, response -> SwingUtilities.invokeLater(() -> {
+        CompletableFuture.runAsync(() -> agentServerService.chatSse(text, info, response -> SwingUtilities.invokeLater(() -> {
             if (isFirstResponse.getAndSet(false)) {
-                context.conversationPanel().remove(thinkingPanel);
+                context.conversationPanel().remove(thinkingIndicatorPanel);
                 addMessageToConversation(context, response, false, ChatUtils.hasAction(response), true);
             } else {
                 updateLastMessage(context, response);
@@ -215,13 +224,6 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         }
     }
 
-    private JPanel addThinkingIndicator(JPanel conversationPanel, JBScrollPane conversationScrollPane) {
-        var thinkingPanel = ThinkingIndicator.createThinkingIndicator();
-        conversationPanel.add(thinkingPanel);
-        WindowsUtils.scrollBottom(conversationPanel, conversationScrollPane);
-        return thinkingPanel;
-    }
-
     private void addMessageToConversation(NaixtToolWindowContext context, ChatResponse message, boolean isUser, boolean showApprove, boolean showRegenerate) {
         var messagePanel = new JPanel(new BorderLayout());
         messagePanel.setBorder(BorderFactory.createCompoundBorder(
@@ -235,7 +237,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         });
         messagePanel.add(header, BorderLayout.NORTH);
 
-        var textArea = new JTextArea(showRegenerate ? message.text + "\n" + ChatUtils.STILL_THINKING : message.text);
+        var textArea = new JTextArea(showRegenerate ? message.text + ChatUtils.STILL_THINKING : message.text);
         textArea.setName("MessageTextArea");
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
