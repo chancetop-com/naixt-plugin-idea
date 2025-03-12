@@ -3,6 +3,7 @@ package com.chancetop.naixt.plugin.idea.windows;
 import com.chancetop.naixt.agent.api.naixt.ChatResponse;
 import com.intellij.icons.AllIcons;
 import com.intellij.ui.JBColor;
+import com.intellij.util.ui.JBUI;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,6 +28,7 @@ public class MessageHeaderPanel {
 			regenerateButton.setToolTipText("Regenerate");
 			regenerateButton.setBorderPainted(false);
 			regenerateButton.setContentAreaFilled(false);
+			regenerateButton.setPreferredSize(new Dimension(JBUI.scale(30), JBUI.scale(30)));
 			regenerateButton.addActionListener(e -> afterRegenerate.run());
 			buttonPanel.add(regenerateButton);
 		}
@@ -35,6 +37,7 @@ public class MessageHeaderPanel {
 		button.setToolTipText("Copy to clipboard");
 		button.setBorderPainted(false);
 		button.setContentAreaFilled(false);
+		button.setPreferredSize(new Dimension(JBUI.scale(30), JBUI.scale(30)));
 		button.addActionListener(e -> copyToClipboard(message.text, button));
 		buttonPanel.add(button);
 
