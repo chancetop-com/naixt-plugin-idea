@@ -17,11 +17,19 @@
     The Naixt coding agent.<br>
     How to use it:<br>
     1. Open the Naixt tool window.<br>
+
     2. Setting the env of SYS_LLM_ENDPOINT and SYS_LLM_APIKEY.<br>
+         Supported LLM provider: LiteLLM(litellm), Azure OpenAI(azure), Azure Inference(azure-inference).<br>
+         Default LLM provider: Azure Inference.<br>
+         Switch the LLM provider: setting SYS_LLM_PROVIDER value to provider lite litellm or azure or azure-inference.<br>
+
     3. Option A: Click the "Settings" button to configure the Naixt coding agent, especially the server package section.<br>
     3. Option B: Run Naixt coding agent server locally by yourself.<br>
+
     4. Click the "Start" button to start the Naixt coding agent. If you run the Naixt coding agent server by yourself skip this step.<br>
+
     5. Chat with the Naixt coding agent in the Naixt tool window.<br>
+
     6. Notes:<br>
     If you cannot download the agent package automatically, please download by hand from here https://github.com/chancetop-com/naixt-agent and put it in the idea's plugins dir. /path/to/the/idea's plugins/naixt/agent-service.tar
   ]]></description>
@@ -31,6 +39,11 @@
   <depends>com.intellij.modules.platform</depends>
 
   <change-notes><![CDATA[
+    <h2>Version 1.0.14</h2>
+    <ul>
+      <li>Add diagnostic information to agent.</li>
+      <li>Add quick suggestion query.</li>
+    </ul>
     <h2>Version 1.0.13</h2>
     <ul>
       <li>Optimize the copy and regenerate button.</li>

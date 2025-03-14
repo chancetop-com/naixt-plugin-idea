@@ -1,8 +1,9 @@
 package com.chancetop.naixt.plugin.idea.windows;
 
-import com.chancetop.naixt.agent.api.naixt.ChatResponse;
+import com.chancetop.naixt.agent.api.naixt.AgentChatResponse;
 import com.chancetop.naixt.plugin.idea.ide.IdeUtils;
 import com.chancetop.naixt.plugin.idea.windows.inernal.FileChangeItem;
+import com.chancetop.naixt.plugin.idea.windows.inernal.FileChangeListRenderer;
 import com.intellij.diff.DiffContentFactory;
 import com.intellij.diff.DiffManager;
 import com.intellij.diff.requests.SimpleDiffRequest;
@@ -36,7 +37,7 @@ public class ApprovePanel {
      * @param msg The ChatResponse containing file change information.
      * @param afterApproved The runnable to execute after approval.
      */
-    public static void showApprovePanel(Project project, ChatResponse msg, Runnable afterApproved) {
+    public static void showApprovePanel(Project project, AgentChatResponse msg, Runnable afterApproved) {
         try {
             var window = ToolWindowManager.getInstance(project).getToolWindow("Naixt Changelist");
             var panel = createChangelistPanel(project, window, msg, afterApproved);
@@ -67,9 +68,9 @@ public class ApprovePanel {
      * @param afterApproved The runnable to execute after approval.
      * @return A JPanel representing the changelist panel.
      */
-    public static JPanel createChangelistPanel(Project project, ToolWindow window, ChatResponse msg, Runnable afterApproved) {
+    public static JPanel createChangelistPanel(Project project, ToolWindow window, AgentChatResponse msg, Runnable afterApproved) {
         var panel = new JPanel(new BorderLayout());
-        if (msg == null || msg.fileContents.isEmpty()) msg = ChatResponse.of("No changes found");
+        if (msg == null || msg.fileContents.isEmpty()) msg = AgentChatResponse.of("No changes found");
 
         var fileListModel = new DefaultListModel<FileChangeItem>();
         msg.fileContents.forEach(fc -> {

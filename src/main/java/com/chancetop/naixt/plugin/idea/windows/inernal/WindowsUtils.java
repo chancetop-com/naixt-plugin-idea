@@ -2,6 +2,8 @@ package com.chancetop.naixt.plugin.idea.windows.inernal;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * @author stephen
@@ -28,5 +30,11 @@ public class WindowsUtils {
             var vertical = conversationScrollPane.getVerticalScrollBar();
             vertical.setValue(vertical.getMaximum());
         });
+    }
+
+    public static Optional<Component> findChildComponentByName(Container component, String name) {
+        return Arrays.stream(component.getComponents())
+                .filter(v -> name.equals(v.getName()))
+                .findFirst();
     }
 }

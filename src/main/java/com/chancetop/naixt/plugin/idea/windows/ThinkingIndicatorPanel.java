@@ -10,7 +10,7 @@ import java.awt.*;
 /**
  * @author stephen
  */
-public class ThinkingIndicator {
+public class ThinkingIndicatorPanel {
 
     public static JPanel addThinkingIndicator(JPanel conversationPanel, JBScrollPane conversationScrollPane) {
         var thinkingPanel = createThinkingIndicator();

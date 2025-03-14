@@ -1,7 +1,7 @@
 package com.chancetop.naixt.plugin.idea.windows;
 
 import com.chancetop.naixt.plugin.idea.agent.AgentServerService;
-import com.chancetop.naixt.agent.api.naixt.ChatResponse;
+import com.chancetop.naixt.agent.api.naixt.AgentChatResponse;
 import com.chancetop.naixt.plugin.idea.agent.ChatResult;
 import com.chancetop.naixt.plugin.idea.agent.ChatUtils;
 import com.chancetop.naixt.plugin.idea.icons.NaixtIcons;
@@ -20,15 +20,13 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
-import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.content.ContentFactory;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -48,25 +46,43 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         var mainPanel = new JPanel(new BorderLayout());
         var conversationPanel = new JPanel();
         var conversationScrollPane = new JBScrollPane(conversationPanel);
-        var context = new NaixtToolWindowContext(project, toolWindow, mainPanel, conversationPanel, conversationScrollPane, workspaceBasePath);
+        var context = new NaixtToolWindowContext(project, toolWindow, mainPanel, conversationPanel, conversationScrollPane, workspaceBasePath, agentServerService);
 
         conversationPanel.setLayout(new BoxLayout(conversationPanel, BoxLayout.Y_AXIS));
         toolWindow.getContentManager().addContent(ContentFactory.getInstance().createContent(mainPanel, "", false));
 
         mainPanel.add(createHeaderPanel(context), BorderLayout.NORTH);
         mainPanel.add(conversationScrollPane, BorderLayout.CENTER);
-        mainPanel.add(InputPanel.createBottomInputAreaAndButtonsPanel(context, textCallback(context)), BorderLayout.SOUTH);
+        // take care of this callback context
+        context.setCallback(textCallback(context));
+        mainPanel.add(InputPanel.createBottomInputAreaAndButtonsPanel(context), BorderLayout.SOUTH);
 
         sendWelcomeMessage(context);
     }
 
     private void sendWelcomeMessage(NaixtToolWindowContext context) {
         context.conversationPanel().removeAll();
-        addMessageToConversation(context, new ChatResult(true, ChatResponse.of(MessageHeaderPanel.HELLO_MESSAGE)), false, false, false);
+
+        var suggestionsPanel = new JPanel();
+        suggestionsPanel.setLayout(new BoxLayout(suggestionsPanel, BoxLayout.Y_AXIS));
+
+        IdeUtils.getInfo(context.project(), info -> {
+            List<String> suggestions;
+            try {
+                suggestions = agentServerService.suggestion(info);
+            } catch (Exception e) {
+                suggestions = List.of();
+            }
+            var messagePanel = MessagePanel.createMessagePanel(context, false, false, new ChatResult(true, AgentChatResponse.of(MessagePanel.HELLO_MESSAGE)), suggestions);
+            context.conversationPanel().add(messagePanel);
+            context.conversationPanel().validate();
+            context.conversationPanel().repaint();
+        });
     }
 
     private @NotNull JPanel createHeaderPanel(NaixtToolWindowContext context) {
         var headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setName("HeaderPanel");
         var nameLabel = new JLabel("New Conversation");
         headerPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
         headerPanel.add(nameLabel, BorderLayout.WEST);
@@ -170,54 +186,53 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     }
 
     private TextAreaCallback textCallback(NaixtToolWindowContext context) {
-        return textArea -> {
-            var text = textArea.getText();
-            if (text.isEmpty()) {
-                Messages.showMessageDialog(context.project(), "Empty input!", "Warning", Messages.getWarningIcon());
-                return;
+        return (text, show, after) -> {
+            if (show) {
+                if (text.isEmpty()) {
+                    Messages.showMessageDialog(context.project(), "Empty input!", "Warning", Messages.getWarningIcon());
+                    return;
+                }
+                MessagePanel.clearLastMessageRegenerateButton(context.conversationPanel());
+                addMessageToConversation(context, new ChatResult(true, AgentChatResponse.of(text)), true, false);
+                after.run();
             }
-            MessageHeaderPanel.clearLastMessageRegenerateButton(context.conversationPanel());
-            addMessageToConversation(context, new ChatResult(true, ChatResponse.of(text)), true, false, false);
-            textArea.setText("");
-
             responseToConversation(context, text);
         };
     }
 
     private void responseToConversation(NaixtToolWindowContext context, String text) {
-        var thinkingIndicatorPanel = ThinkingIndicator.addThinkingIndicator(context.conversationPanel(), context.conversationScrollPane());
+        var thinkingIndicatorPanel = ThinkingIndicatorPanel.addThinkingIndicator(context.conversationPanel(), context.conversationScrollPane());
         WindowsUtils.scrollBottom(context.conversationPanel(), context.conversationScrollPane());
-
-        var info = IdeUtils.getInfo(context.project());
-        var isFirstResponse = new AtomicBoolean(true);
-
-        CompletableFuture.runAsync(() -> agentServerService.chatSse(text, info, result -> SwingUtilities.invokeLater(() -> {
-            if (isFirstResponse.getAndSet(false)) {
-                context.conversationPanel().remove(thinkingIndicatorPanel);
-                addMessageToConversation(context, result, false, ChatUtils.hasAction(result.response()), true);
-            } else {
-                updateLastMessage(context, result.response());
-            }
-            WindowsUtils.scrollBottom(context.conversationPanel(), context.conversationScrollPane());
-        })));
+        IdeUtils.getInfo(context.project(), info -> {
+            var isFirstResponse = new AtomicBoolean(true);
+            CompletableFuture.runAsync(() -> agentServerService.chatSse(text, info, result -> SwingUtilities.invokeLater(() -> {
+                if (isFirstResponse.getAndSet(false)) {
+                    context.conversationPanel().remove(thinkingIndicatorPanel);
+                    addMessageToConversation(context, result, false, true);
+                } else {
+                    updateLastMessage(context, result.response());
+                }
+                WindowsUtils.scrollBottom(context.conversationPanel(), context.conversationScrollPane());
+            })));
+        });
     }
 
-    private void updateLastMessage(NaixtToolWindowContext context, ChatResponse response) {
+    // if conversationPanel or messagePanel layout is changed, this method should be updated
+    private void updateLastMessage(NaixtToolWindowContext context, AgentChatResponse response) {
         var components = context.conversationPanel().getComponents();
         if (components.length == 0) return;
 
         var lastComponent = components[components.length - 1];
-        if (lastComponent instanceof JPanel messagePanel) {
-            Arrays.stream(messagePanel.getComponents())
-                    .filter(v -> "MessageTextArea".equals(v.getName()))
-                    .findFirst()
-                    .ifPresent(textArea -> ((JTextArea) textArea).setText(ChatUtils.buildContent(((JTextArea) textArea).getText(), response)));
+        if (lastComponent instanceof JPanel lastMessagePanel) {
+            WindowsUtils.findChildComponentByName(lastMessagePanel, "MessageMediaPanel")
+                    .flatMap(panel -> WindowsUtils.findChildComponentByName((Container) panel, "MessageTextArea"))
+                    .ifPresent(textArea -> {
+                        ((JTextArea) textArea).setText(ChatUtils.buildContent(((JTextArea) textArea).getText(), response));
+                    });
             if (ChatUtils.hasAction(response)) {
-                Arrays.stream(messagePanel.getComponents())
-                        .filter(v -> "ApproveButtonPanel".equals(v.getName()))
-                        .findFirst()
+                WindowsUtils.findChildComponentByName(lastMessagePanel, "ApproveButtonPanel")
                         .ifPresent(panel -> {
-                            ((JPanel) panel).add(createApproveButton(context, response));
+                            ((JPanel) panel).add(MessagePanel.createApproveButton(context, response));
                             panel.revalidate();
                             panel.repaint();
                         });
@@ -225,66 +240,16 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         }
     }
 
-    private void addMessageToConversation(NaixtToolWindowContext context, ChatResult result, boolean isUser, boolean showApprove, boolean showRegenerate) {
-        var messagePanel = new JPanel(new BorderLayout());
-        messagePanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, isUser ? JBColor.LIGHT_GRAY : JBColor.DARK_GRAY),
-                BorderFactory.createEmptyBorder(5, 5, 5, 5)
-        ));
-
-        var header = MessageHeaderPanel.createMessageHeaderPanel(result.response(), isUser, showRegenerate, () -> {
-            context.conversationPanel().remove(messagePanel);
-            responseToConversation(context, "Think and regenerate the response");
-        });
-        messagePanel.add(header, BorderLayout.NORTH);
-
-        var textArea = new JTextArea(showRegenerate && result.success() ? result.response().text + ChatUtils.STILL_THINKING : result.response().text);
-        textArea.setName("MessageTextArea");
-        textArea.setLineWrap(true);
-        textArea.setWrapStyleWord(true);
-        textArea.setEditable(false);
-        textArea.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        messagePanel.add(textArea, BorderLayout.CENTER);
-
-        if (!isUser) {
-            messagePanel.add(createApproveButtonPanel(context, showApprove, result.response()), BorderLayout.SOUTH);
-        }
-
+    private void addMessageToConversation(NaixtToolWindowContext context, ChatResult result, boolean isUser, boolean showRegenerate) {
+        var messagePanel = MessagePanel.createMessagePanel(context, isUser, showRegenerate, result, null);
         context.conversationPanel().add(messagePanel);
         context.conversationPanel().validate();
         context.conversationPanel().paintImmediately(context.conversationPanel().getBounds());
         WindowsUtils.scrollBottom(context.conversationPanel(), context.conversationScrollPane());
     }
 
-    private JPanel createApproveButtonPanel(NaixtToolWindowContext context, Boolean showApprove, ChatResponse message) {
-        var panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panel.setName("ApproveButtonPanel");
-        if (showApprove) {
-            panel.add(createApproveButton(context, message));
-        }
-        return panel;
-    }
-
-    private JButton createApproveButton(NaixtToolWindowContext context, ChatResponse message) {
-        var approveButton = new JButton("Need Your Approve!");
-        approveButton.addActionListener(e -> handleApprove(context, approveButton, e, message));
-        return approveButton;
-    }
-
     private void repaintConversationPanel(JPanel conversationPanel) {
         conversationPanel.revalidate();
         conversationPanel.repaint();
-    }
-
-    private void handleApprove(NaixtToolWindowContext context, JButton button, ActionEvent e, ChatResponse msg) {
-        ApprovePanel.showApprovePanel(context.project(), msg, () -> {
-            try {
-                button.setText("Approved");
-                agentServerService.approve(msg, context.workspaceBasePath());
-                IdeUtils.refreshWorkspace(context.workspaceBasePath());
-            } catch (Exception ex) {
-                Messages.showMessageDialog(context.project(), "Failed to approve, please check the agent status and try again", "Warning", Messages.getWarningIcon());
-            }
-        });
     }
 }

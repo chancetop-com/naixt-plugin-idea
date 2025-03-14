@@ -1,7 +1,6 @@
-package com.chancetop.naixt.plugin.idea.windows;
+package com.chancetop.naixt.plugin.idea.windows.inernal;
 
 import com.chancetop.naixt.plugin.idea.ide.IdeUtils;
-import com.chancetop.naixt.plugin.idea.windows.inernal.FileChangeItem;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.project.Project;

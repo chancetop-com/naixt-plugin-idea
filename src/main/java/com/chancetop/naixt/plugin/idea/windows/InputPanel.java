@@ -21,8 +21,9 @@ import java.awt.event.ActionEvent;
  */
 public class InputPanel {
 
-    public static JPanel createBottomInputAreaAndButtonsPanel(NaixtToolWindowContext context, TextAreaCallback callback) {
+    public static JPanel createBottomInputAreaAndButtonsPanel(NaixtToolWindowContext context) {
         var inputPanel = new JPanel();
+        inputPanel.setName("InputPanel");
         inputPanel.setLayout(new BorderLayout(JBUI.scale(5), JBUI.scale(5)));
         inputPanel.setBorder(JBUI.Borders.empty(JBUI.scale(5), JBUI.scale(5), JBUI.scale(5), JBUI.scale(5)));
 
@@ -41,8 +42,8 @@ public class InputPanel {
         buttonPanel.setLayout(new BorderLayout());
 
         var addButton = createAddButton(context);
-        var maximizeButton = createMaximizeButton(context, callback);
-        var sendButton = createSendButton(inputTextArea, callback);
+        var maximizeButton = createMaximizeButton(context, context.callback());
+        var sendButton = createSendButton(inputTextArea, context.callback());
 
         buttonPanel.add(maximizeButton, BorderLayout.WEST);
 
@@ -144,9 +145,7 @@ public class InputPanel {
         sendButton.setFont(UIManager.getFont("Button.font"));
         sendButton.setBackground(JBColor.background());
         sendButton.setForeground(JBColor.foreground());
-        sendButton.addActionListener(l -> {
-            callback.run(inputTextArea);
-        });
+        sendButton.addActionListener(l -> callback.run(inputTextArea.getText(), true, () -> inputTextArea.setText("")));
         return sendButton;
     }
 }

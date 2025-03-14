@@ -2,9 +2,12 @@ package com.chancetop.naixt.plugin.idea.agent;
 
 import com.chancetop.naixt.agent.api.NaixtAgentWebService;
 import com.chancetop.naixt.agent.api.NaixtWebService;
-import com.chancetop.naixt.agent.api.naixt.ApproveChangeRequest;
-import com.chancetop.naixt.agent.api.naixt.ChatResponse;
-import com.chancetop.naixt.agent.api.naixt.NaixtChatRequest;
+import com.chancetop.naixt.agent.api.naixt.AgentApproveRequest;
+import com.chancetop.naixt.agent.api.naixt.AgentChatResponse;
+import com.chancetop.naixt.agent.api.naixt.AgentSuggestionRequest;
+import com.chancetop.naixt.agent.api.naixt.CurrentEditInfoView;
+import com.chancetop.naixt.agent.api.naixt.AgentChatRequest;
+import com.chancetop.naixt.agent.api.naixt.NaixtPluginSettingsView;
 import com.chancetop.naixt.plugin.idea.ide.internal.IdeCurrentInfo;
 import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
 import com.intellij.openapi.application.ApplicationManager;
@@ -22,6 +25,7 @@ import core.framework.json.JSON;
 import org.slf4j.Logger;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -77,7 +81,7 @@ public final class AgentServerService {
         }
     }
 
-    public ChatResponse chat(String text, IdeCurrentInfo info) {
+    public AgentChatResponse chat(String text, IdeCurrentInfo info) {
         return naixtAgentWebService.chat(buildChatRequest(text, info));
     }
 
@@ -86,9 +90,9 @@ public final class AgentServerService {
         request.body = JSON.toJSON(buildChatRequest(text, info)).getBytes();
         try (var response = client.sse(request)) {
             for (var event : response) {
-                var chatResponse = JSON.fromJSON(ChatResponse.class, event.data());
-                consumer.accept(new ChatResult(true, chatResponse));
-                if (!chatResponse.fileContents.isEmpty()) {
+                var AgentChatResponse = JSON.fromJSON(AgentChatResponse.class, event.data());
+                consumer.accept(new ChatResult(true, AgentChatResponse));
+                if (!AgentChatResponse.fileContents.isEmpty()) {
                     response.close();
                 }
             }
@@ -97,27 +101,48 @@ public final class AgentServerService {
                 return;
             }
             logger.error("SSE request failed", e);
-            consumer.accept(new ChatResult(false, ChatResponse.of("Chat to Agent failed, please make sure you started the Agent Server, Error: " + e.getMessage())));
+            consumer.accept(new ChatResult(false, AgentChatResponse.of("Chat to Agent failed, please make sure you started the Agent Server, Error: " + e.getMessage())));
         }
     }
 
-    private NaixtChatRequest buildChatRequest(String text, IdeCurrentInfo info) {
-        var state = NaixtSettingStateService.getInstance().getState();
-        var request = new NaixtChatRequest();
+    private AgentChatRequest buildChatRequest(String text, IdeCurrentInfo info) {
+        var request = new AgentChatRequest();
         request.query = text;
-        request.workspacePath = info.workspacePath();
-        request.currentFilePath = info.currentFilePath();
-        request.currentLineNumber = info.position().line();
-        request.currentColumnNumber = info.position().column();
-        request.model = state == null ? "" : state.getLlmProviderModel();
-        request.planningModel = state == null ? "" : state.getPlanningModel();
+        request.settings = buildSettings();
+        request.editInfo = buildEditInfo(info);
         return request;
     }
 
-    public void approve(ChatResponse msg, String workspacePath) {
-        var req = new ApproveChangeRequest();
+    private CurrentEditInfoView buildEditInfo(IdeCurrentInfo info) {
+        var editInfo = new CurrentEditInfoView();
+        editInfo.workspacePath = info.workspacePath();
+        editInfo.currentFilePath = info.currentFilePath();
+        editInfo.currentLineNumber = info.position().line();
+        editInfo.currentColumnNumber = info.position().column();
+        editInfo.currentFileDiagnostic = info.currentFileDiagnostic();
+        return editInfo;
+    }
+
+    private NaixtPluginSettingsView buildSettings() {
+        var state = NaixtSettingStateService.getInstance().getState();
+        var settings = new NaixtPluginSettingsView();
+        settings.model = state == null ? "" : state.getLlmProviderModel();
+        settings.planningModel = state == null ? "" : state.getPlanningModel();
+        return settings;
+    }
+
+    public void approve(AgentChatResponse msg, String workspacePath) {
+        var req = new AgentApproveRequest();
         req.workspacePath = workspacePath;
         req.fileContents = msg.fileContents;
         naixtAgentWebService.approved(req);
+    }
+
+    public List<String> suggestion(IdeCurrentInfo info) {
+        var request = new AgentSuggestionRequest();
+        request.settings = buildSettings();
+        request.editInfo = buildEditInfo(info);
+        var rsp = naixtAgentWebService.suggestion(request);
+        return rsp.suggestions;
     }
 }
