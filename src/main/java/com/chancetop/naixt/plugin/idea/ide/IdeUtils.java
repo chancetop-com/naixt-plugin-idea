@@ -2,11 +2,14 @@ package com.chancetop.naixt.plugin.idea.ide;
 
 import com.chancetop.naixt.plugin.idea.ide.internal.IdeCurrentInfo;
 import com.chancetop.naixt.plugin.idea.ide.internal.Position;
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.codeInsight.daemon.impl.DaemonCodeAnalyzerImpl;
+import com.intellij.codeInsight.daemon.impl.HighlightInfo;
 import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.editor.impl.DocumentMarkupModel;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -15,12 +18,15 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VfsUtil;
+import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiManager;
 import core.framework.util.Strings;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -33,7 +39,7 @@ public class IdeUtils {
     }
 
     public static Position offsetToPosition(Document doc, int offset) {
-        return new Position(doc.getLineNumber(offset), offset - doc.getLineStartOffset(doc.getLineNumber(offset)));
+        return new Position(doc.getLineNumber(offset) + 1, offset - doc.getLineStartOffset(doc.getLineNumber(offset)) + 1);
     }
 
     public static Position getCurrentPosition(Project project) {
@@ -90,22 +96,23 @@ public class IdeUtils {
         return ReadAction.compute(() -> {
             var psiFile = PsiManager.getInstance(project).findFile(virtualFile);
             if (psiFile == null) return "";
+            var document = psiFile.getFileDocument();
+            var markupModel = DocumentMarkupModel.forDocument(document, project, true);
+            var highlights = markupModel.getAllHighlighters();
 
             var highlightInfos = new ArrayList<String>();
-            DaemonCodeAnalyzerImpl.processHighlights(
-                    psiFile.getFileDocument(),
-                    project,
-                    HighlightSeverity.ERROR,
-                    0,
-                    psiFile.getTextLength(),
-                    highlightInfo -> {
-                        if (highlightInfo.getSeverity() == HighlightSeverity.ERROR) {
-                            var position = offsetToPosition(psiFile.getFileDocument(), highlightInfo.getActualStartOffset());
-                            var desc = Strings.format("Error[start position -> line:{}, column:{}]: {}", position.line(), position.column(), highlightInfo.getDescription());
-                            highlightInfos.add(desc);
-                        }
-                        return true;
-                    });
+            Arrays.stream(highlights).forEach(highlighter -> {
+                var errorType = highlighter.getErrorStripeTooltip();
+                if (!(errorType instanceof HighlightInfo info)) return;
+                if (info.getSeverity() == HighlightSeverity.ERROR) {
+                    var position = offsetToPosition(document, info.getActualStartOffset());
+                    String desc = String.format(
+                            "Error[start position -> line:%d, column:%d]: %s",
+                            position.line(), position.column(), info.getDescription()
+                    );
+                    highlightInfos.add(desc);
+                }
+            });
 
             return String.join("\n", highlightInfos);
         });
