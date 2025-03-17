@@ -39,6 +39,10 @@
   <depends>com.intellij.modules.platform</depends>
 
   <change-notes><![CDATA[
+    <h2>Version 1.0.15</h2>
+    <ul>
+      <li>Async send welcome message.</li>
+    </ul>
     <h2>Version 1.0.14</h2>
     <ul>
       <li>Add diagnostic information to agent.</li>

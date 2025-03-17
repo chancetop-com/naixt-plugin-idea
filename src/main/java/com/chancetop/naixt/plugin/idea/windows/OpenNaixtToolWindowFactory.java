@@ -66,17 +66,23 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         var suggestionsPanel = new JPanel();
         suggestionsPanel.setLayout(new BoxLayout(suggestionsPanel, BoxLayout.Y_AXIS));
 
-        IdeUtils.getInfo(context.project(), info -> {
-            List<String> suggestions;
-            try {
-                suggestions = agentServerService.suggestion(info);
-            } catch (Exception e) {
-                suggestions = List.of();
-            }
-            var messagePanel = MessagePanel.createMessagePanel(context, false, false, new ChatResult(true, AgentChatResponse.of(MessagePanel.HELLO_MESSAGE)), suggestions);
-            context.conversationPanel().add(messagePanel);
-            context.conversationPanel().validate();
-            context.conversationPanel().repaint();
+        CompletableFuture.runAsync(() -> {
+            IdeUtils.getInfo(context.project(), info -> {
+                List<String> suggestions;
+                try {
+                    suggestions = agentServerService.suggestion(info);
+                } catch (Exception e) {
+                    suggestions = List.of();
+                }
+                List<String> finalSuggestions = suggestions;
+                SwingUtilities.invokeLater(() -> {
+                    var messagePanel = MessagePanel.createMessagePanel(context, false, false,
+                            new ChatResult(true, AgentChatResponse.of(MessagePanel.HELLO_MESSAGE)), finalSuggestions);
+                    context.conversationPanel().add(messagePanel);
+                    context.conversationPanel().validate();
+                    context.conversationPanel().repaint();
+                });
+            });
         });
     }
 
@@ -166,9 +172,9 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
                 // handle new event
                 // for now, clear all
                 context.conversationPanel().removeAll();
-                sendWelcomeMessage(context);
                 repaintConversationPanel(context.conversationPanel());
                 agentServerService.clearShortTermMemory();
+                sendWelcomeMessage(context);
             }
         };
     }
