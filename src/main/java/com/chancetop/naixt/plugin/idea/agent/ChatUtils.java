@@ -13,7 +13,7 @@ public class ChatUtils {
     }
 
     public static String buildContent(String lastContent, AgentChatResponse rsp) {
-        var content = lastContent.substring(0, lastContent.lastIndexOf(STILL_THINKING)) + "\n\n" + rsp.text;
+        var content = lastContent.contains(STILL_THINKING) ? lastContent.substring(0, lastContent.lastIndexOf(STILL_THINKING)) + "\n\n" + rsp.text : lastContent + "\n\n" + rsp.text;
         return hasAction(rsp) || rsp.groupFinished ? content : content + STILL_THINKING;
     }
 }

@@ -39,6 +39,12 @@
   <depends>com.intellij.modules.platform</depends>
 
   <change-notes><![CDATA[
+    <h2>Version 1.0.16</h2>
+    <ul>
+      <li>Fix send welcome message.</li>
+      <li>Fix finished message.</li>
+      <li>Update API.</li>
+    </ul>
     <h2>Version 1.0.15</h2>
     <ul>
       <li>Async send welcome message.</li>

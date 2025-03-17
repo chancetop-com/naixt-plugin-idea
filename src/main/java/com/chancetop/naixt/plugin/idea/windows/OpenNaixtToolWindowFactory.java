@@ -63,27 +63,26 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
     private void sendWelcomeMessage(NaixtToolWindowContext context) {
         context.conversationPanel().removeAll();
 
-        var suggestionsPanel = new JPanel();
-        suggestionsPanel.setLayout(new BoxLayout(suggestionsPanel, BoxLayout.Y_AXIS));
-
-        CompletableFuture.runAsync(() -> {
-            IdeUtils.getInfo(context.project(), info -> {
-                List<String> suggestions;
-                try {
-                    suggestions = agentServerService.suggestion(info);
-                } catch (Exception e) {
-                    suggestions = List.of();
-                }
-                List<String> finalSuggestions = suggestions;
-                SwingUtilities.invokeLater(() -> {
-                    var messagePanel = MessagePanel.createMessagePanel(context, false, false,
-                            new ChatResult(true, AgentChatResponse.of(MessagePanel.HELLO_MESSAGE)), finalSuggestions);
-                    context.conversationPanel().add(messagePanel);
-                    context.conversationPanel().validate();
-                    context.conversationPanel().repaint();
-                });
-            });
+        SwingUtilities.invokeLater(() -> {
+            var helloMessagePanel = MessagePanel.createMessagePanel(context, false, false,
+                    new ChatResult(true, AgentChatResponse.of(MessagePanel.HELLO_MESSAGE)), List.of());
+            context.conversationPanel().add(helloMessagePanel);
+            context.conversationPanel().validate();
+            context.conversationPanel().repaint();
         });
+
+        IdeUtils.getInfo(context.project(), info -> CompletableFuture.runAsync(() -> {
+            var suggestions = agentServerService.suggestion(info);
+            context.conversationPanel().removeAll();
+
+            SwingUtilities.invokeLater(() -> {
+                var helloMessagePanel = MessagePanel.createMessagePanel(context, false, false,
+                        new ChatResult(true, AgentChatResponse.of(MessagePanel.HELLO_MESSAGE)), suggestions);
+                context.conversationPanel().add(helloMessagePanel);
+                context.conversationPanel().validate();
+                context.conversationPanel().repaint();
+            });
+        }));
     }
 
     private @NotNull JPanel createHeaderPanel(NaixtToolWindowContext context) {
@@ -169,8 +168,6 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         return new AnAction("New", "New conversation", AllIcons.General.Add) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e) {
-                // handle new event
-                // for now, clear all
                 context.conversationPanel().removeAll();
                 repaintConversationPanel(context.conversationPanel());
                 agentServerService.clearShortTermMemory();
@@ -223,7 +220,6 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         });
     }
 
-    // if conversationPanel or messagePanel layout is changed, this method should be updated
     private void updateLastMessage(NaixtToolWindowContext context, AgentChatResponse response) {
         var components = context.conversationPanel().getComponents();
         if (components.length == 0) return;
@@ -232,9 +228,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
         if (lastComponent instanceof JPanel lastMessagePanel) {
             WindowsUtils.findChildComponentByName(lastMessagePanel, "MessageMediaPanel")
                     .flatMap(panel -> WindowsUtils.findChildComponentByName((Container) panel, "MessageTextArea"))
-                    .ifPresent(textArea -> {
-                        ((JTextArea) textArea).setText(ChatUtils.buildContent(((JTextArea) textArea).getText(), response));
-                    });
+                    .ifPresent(textArea -> ((JTextArea) textArea).setText(ChatUtils.buildContent(((JTextArea) textArea).getText(), response)));
             if (ChatUtils.hasAction(response)) {
                 WindowsUtils.findChildComponentByName(lastMessagePanel, "ApproveButtonPanel")
                         .ifPresent(panel -> {

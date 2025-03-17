@@ -90,18 +90,19 @@ public final class AgentServerService {
         request.body = JSON.toJSON(buildChatRequest(text, info)).getBytes();
         try (var response = client.sse(request)) {
             for (var event : response) {
-                var AgentChatResponse = JSON.fromJSON(AgentChatResponse.class, event.data());
-                consumer.accept(new ChatResult(true, AgentChatResponse));
-                if (!AgentChatResponse.fileContents.isEmpty()) {
+                var rsp = JSON.fromJSON(AgentChatResponse.class, event.data());
+                consumer.accept(new ChatResult(true, rsp));
+                if (!rsp.fileContents.isEmpty()) {
                     response.close();
                 }
             }
         } catch (Exception e) {
             if (e instanceof IllegalStateException && e.getMessage().contains("closed")) {
+                consumer.accept(new ChatResult(true, AgentChatResponse.of("finished", true)));
                 return;
             }
             logger.error("SSE request failed", e);
-            consumer.accept(new ChatResult(false, AgentChatResponse.of("Chat to Agent failed, please make sure you started the Agent Server, Error: " + e.getMessage())));
+            consumer.accept(new ChatResult(false, AgentChatResponse.of("Chat to Agent failed, please make sure you started the Agent Server, Error: " + e.getMessage(), true)));
         }
     }
 
