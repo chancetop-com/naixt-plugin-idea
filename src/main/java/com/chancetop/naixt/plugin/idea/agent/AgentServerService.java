@@ -38,7 +38,7 @@ public final class AgentServerService {
     private final NaixtWebService naixtWebService;
     private final NaixtAgentWebService naixtAgentWebService;
     private final BeanClassValidator beanClassValidator = new BeanClassValidator();
-    private final HTTPClient client = HTTPClient.builder().connectTimeout(Duration.ofMillis(100)).timeout(Duration.ofSeconds(180)).build();
+    private final HTTPClient client = HTTPClient.builder().connectTimeout(Duration.ofMillis(100)).timeout(Duration.ofSeconds(300)).build();
 
     public  <T> T createClient(Class<T> t, String endpoint) {
         logger.info("create web service client, interface={}, serviceURL={}", t.getCanonicalName(), endpoint);
@@ -91,6 +91,7 @@ public final class AgentServerService {
         try (var response = client.sse(request)) {
             for (var event : response) {
                 var rsp = JSON.fromJSON(AgentChatResponse.class, event.data());
+                if (rsp.text == null) continue;
                 consumer.accept(new ChatResult(true, rsp));
                 if (!rsp.fileContents.isEmpty()) {
                     response.close();

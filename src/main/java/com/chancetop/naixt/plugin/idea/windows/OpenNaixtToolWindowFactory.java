@@ -73,6 +73,7 @@ public final class OpenNaixtToolWindowFactory implements ToolWindowFactory, Dumb
 
         IdeUtils.getInfo(context.project(), info -> CompletableFuture.runAsync(() -> {
             var suggestions = agentServerService.suggestion(info);
+            if (context.conversationPanel().getComponents().length != 1) return;
             context.conversationPanel().removeAll();
 
             SwingUtilities.invokeLater(() -> {
