@@ -39,6 +39,10 @@
   <depends>com.intellij.modules.platform</depends>
 
   <change-notes><![CDATA[
+    <h2>Version 1.0.17</h2>
+    <ul>
+      <li>longer chat timeout</li>
+    </ul>
     <h2>Version 1.0.16</h2>
     <ul>
       <li>Fix send welcome message.</li>
@@ -82,17 +86,6 @@
     <h2>Version 1.0.7</h2>
     <ul>
       <li>Optimize the server package download and startup.</li>
-    </ul>
-    <h2>Version 1.0.6</h2>
-    <ul>
-      <li>Support sse chat.</li>
-      <li>Update to CoreNG 9.1.7.</li>
-      <li>Auto hide changelist window when apply or cancel.</li>
-      <li>Update the changelist logo.</li>
-    </ul>
-    <h2>Version 1.0.5</h2>
-    <ul>
-      <li>Update the changelist UI.</li>
     </ul>
   ]]></change-notes>
 
