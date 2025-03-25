@@ -7,6 +7,7 @@ import com.chancetop.naixt.agent.api.naixt.AgentChatResponse;
 import com.chancetop.naixt.agent.api.naixt.AgentSuggestionRequest;
 import com.chancetop.naixt.agent.api.naixt.CurrentEditInfoView;
 import com.chancetop.naixt.agent.api.naixt.AgentChatRequest;
+import com.chancetop.naixt.agent.api.naixt.NaixtPluginMcpSettingView;
 import com.chancetop.naixt.agent.api.naixt.NaixtPluginSettingsView;
 import com.chancetop.naixt.plugin.idea.ide.internal.IdeCurrentInfo;
 import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
@@ -130,6 +131,10 @@ public final class AgentServerService {
         var settings = new NaixtPluginSettingsView();
         settings.model = state == null ? "" : state.getLlmProviderModel();
         settings.planningModel = state == null ? "" : state.getPlanningModel();
+        settings.atlassianEnabled = state != null && state.getAtlassianEnabled();
+        var mcpSetting = new NaixtPluginMcpSettingView();
+        mcpSetting.url = state == null ? "" : state.getAtlassianMcpUrl();
+        settings.atlassianMcpSetting = state == null || state.getAtlassianEnabled() ? null : mcpSetting;
         return settings;
     }
 

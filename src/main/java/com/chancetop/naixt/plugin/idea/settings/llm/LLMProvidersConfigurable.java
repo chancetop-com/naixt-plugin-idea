@@ -5,6 +5,7 @@ import com.chancetop.naixt.plugin.idea.settings.NaixtSettingStateService;
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.util.NlsContexts;
+import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.Nullable;
@@ -22,8 +23,10 @@ public class LLMProvidersConfigurable implements Configurable {
     private final JBTextField endpointField = new JBTextField();
     private final JBTextField modelField = new JBTextField();
     private final JBTextField planningModelField = new JBTextField();
+    private final JBTextField atlassianMcpUrlField = new JBTextField();
     private final JBTextField apiKeyField = new JBTextField();
     private final JBTextField agentPackageUrlField = new JBTextField();
+    private final JBCheckBox atlassianEnabledCheckBox = new JBCheckBox();
     private NaixtSettingState state;
 
     @Override
@@ -48,24 +51,8 @@ public class LLMProvidersConfigurable implements Configurable {
         gbcMain.gridy++;
         mainPanel.add(createModelPanel(), gbcMain);
 
-        // for now, we only support LiteLLM
-//        mainPanel.add(createLLMTopPanel(), gbcMain);
-//
-//        providerComboBox.addItemListener(e -> {
-//            if (e.getStateChange() == ItemEvent.SELECTED) {
-//                updateDynamicPanel();
-//            }
-//        });
-//
-//        gbcMain.gridy++;
-//        gbcMain.insets = new Insets(5, 5, 5, 5);
-//        dynamicPanel.setLayout(new GridBagLayout());
-//        updateDynamicPanel();
-//        mainPanel.add(dynamicPanel, gbcMain);
-//
-//        gbcMain.gridy++;
-//        gbcMain.weighty = 1.0;
-//        mainPanel.add(Box.createVerticalBox(), gbcMain);
+        gbcMain.gridy++;
+        mainPanel.add(createAtlassianPanel(), gbcMain);
 
         return mainPanel;
     }
@@ -112,6 +99,32 @@ public class LLMProvidersConfigurable implements Configurable {
         gbc.gridx += 1;
         gbc.weightx = 1.0;
         panel.add(planningModelField, gbc);
+        return panel;
+    }
+
+    private JPanel createAtlassianPanel() {
+        var panel = new JPanel(new GridBagLayout());
+        var gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.EAST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = JBUI.insets(5);
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Atlassian Enabled:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+
+        panel.add(atlassianEnabledCheckBox, gbc);
+
+        gbc.gridx += 1;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Atlassian MCP URL:"), gbc);
+        gbc.gridx += 1;
+        gbc.weightx = 1.0;
+        panel.add(atlassianMcpUrlField, gbc);
         return panel;
     }
 
@@ -184,20 +197,9 @@ public class LLMProvidersConfigurable implements Configurable {
         boolean agentUrlModified = !agentPackageUrlField.getText().equals(state.getAgentPackageDownloadUrl());
         boolean modelModified = !modelField.getText().equals(state.getLlmProviderModel());
         boolean planingModified = !planningModelField.getText().equals(state.getPlanningModel());
-//        var provider = (String) providerComboBox.getSelectedItem();
-//        boolean providerModified = !state.getLlmProvider().equals(provider);
-//        boolean dynamicModified;
-
-//        if ("LiteLLM".equals(provider)) {
-//            boolean endpointModified = !endpointField.getText().equals(state.getLlmProviderUrl());
-//            boolean modelModified = !modelField.getText().equals(state.getLlmProviderModel());
-//            dynamicModified = modelModified || endpointModified;
-//        } else {
-//            dynamicModified = !apiKeyField.getText().equals(state.getLlmProviderApiKey());
-//        }
-
-//        return providerModified || agentUrlModified || dynamicModified;
-        return agentUrlModified || modelModified || planingModified;
+        boolean atlassianMcpUrlModified = !atlassianMcpUrlField.getText().equals(state.getAtlassianMcpUrl());
+        boolean atlassianEnabledModified = atlassianEnabledCheckBox.isEnabled() != state.getAtlassianEnabled();
+        return agentUrlModified || modelModified || planingModified || atlassianMcpUrlModified || atlassianEnabledModified;
     }
 
     @Override
@@ -205,18 +207,8 @@ public class LLMProvidersConfigurable implements Configurable {
         state.setAgentPackageDownloadUrl(agentPackageUrlField.getText());
         state.setLlmProviderModel(modelField.getText());
         state.setPlanningModel(planningModelField.getText());
-
-//        var provider = (String) providerComboBox.getSelectedItem();
-//        state.setLlmProvider(provider);
-//        if ("LiteLLM".equals(provider)) {
-//            state.setLlmProviderUrl(endpointField.getText());
-//            state.setLlmProviderModel(modelField.getText());
-//            state.setLlmProviderApiKey("");
-//        } else {
-//            state.setLlmProviderApiKey(apiKeyField.getText());
-//            state.setLlmProviderUrl("");
-//            state.setLlmProviderModel("");
-//        }
+        state.setAtlassianEnabled(atlassianEnabledCheckBox.isSelected());
+        state.setAtlassianMcpUrl(atlassianMcpUrlField.getText());
     }
 
     @Override
@@ -224,8 +216,7 @@ public class LLMProvidersConfigurable implements Configurable {
         agentPackageUrlField.setText(state.getAgentPackageDownloadUrl());
         modelField.setText(state.getLlmProviderModel());
         planningModelField.setText(state.getPlanningModel());
-//        providerComboBox.setSelectedItem(state.getLlmProvider());
-//        endpointField.setText(state.getLlmProviderUrl());
-//        apiKeyField.setText(state.getLlmProviderApiKey());
+        atlassianEnabledCheckBox.setSelected(state.getAtlassianEnabled());
+        atlassianMcpUrlField.setText(state.getAtlassianMcpUrl());
     }
 }

@@ -39,6 +39,10 @@
   <depends>com.intellij.modules.platform</depends>
 
   <change-notes><![CDATA[
+    <h2>Version 1.0.18</h2>
+    <ul>
+      <li>Add atlassian support.</li>
+    </ul>
     <h2>Version 1.0.17</h2>
     <ul>
       <li>longer chat timeout</li>
@@ -82,10 +86,6 @@
     <h2>Version 1.0.8</h2>
     <ul>
       <li>Separate the tool window of different idea instance, and keep the agent-service single instance.</li>
-    </ul>
-    <h2>Version 1.0.7</h2>
-    <ul>
-      <li>Optimize the server package download and startup.</li>
     </ul>
   ]]></change-notes>
 
