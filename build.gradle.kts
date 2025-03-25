@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.chancetop"
-version = "1.0.18"
+version = "1.0.18-1"
 
 repositories {
   mavenLocal()

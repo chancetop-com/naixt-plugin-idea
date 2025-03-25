@@ -134,7 +134,7 @@ public final class AgentServerService {
         settings.atlassianEnabled = state != null && state.getAtlassianEnabled();
         var mcpSetting = new NaixtPluginMcpSettingView();
         mcpSetting.url = state == null ? "" : state.getAtlassianMcpUrl();
-        settings.atlassianMcpSetting = state == null || state.getAtlassianEnabled() ? null : mcpSetting;
+        settings.atlassianMcpSetting = state == null || !state.getAtlassianEnabled() ? null : mcpSetting;
         return settings;
     }
 
